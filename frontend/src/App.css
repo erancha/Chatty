@@ -8,6 +8,17 @@
 
 .build {
   font-size: xx-small;
+  align-self: self-start;
+}
+
+.network-icon {
+  vertical-align: middle;
+}
+.network-icon.connected {
+  color: green;
+}
+.network-icon.disconnected {
+  color: red;
 }
 
 .sub-container {

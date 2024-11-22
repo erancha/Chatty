@@ -1,8 +1,10 @@
+import React from 'react';
 import { connect, ConnectedProps } from 'react-redux';
 import { Component } from 'react';
 import { RootState } from '../redux/store/store';
 import { setWSConnected, addMessage, setWSUrl } from '../redux/actions/actions';
-import { configService } from './ConfigService';
+import { configService } from '../services/ConfigService';
+import { Network } from 'lucide-react';
 
 type Props = ConnectedProps<typeof connector>;
 class WebSocketService extends Component<Props> {
@@ -150,7 +152,11 @@ class WebSocketService extends Component<Props> {
   }
 
   render() {
-    return null; // This is a non-visual component
+    return (
+      <div title={this.props.wsConnected ? 'Connected' : 'Disconnected'}>
+        <Network size={20} className={`network-icon ${this.props.wsConnected ? 'connected' : 'disconnected'}`} />
+      </div>
+    );
   }
 }
 

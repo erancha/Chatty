@@ -5,7 +5,7 @@ import store from './redux/store/store';
 import { setConfigLoaded } from './redux/actions/actions';
 import Messages from './components/Messages';
 import { configService } from './services/ConfigService';
-import WebSocketService from './services/WebSocketService';
+import WebSocketService from './components/WebSocketService';
 import Menu from './components/Menu';
 import { AppState } from './redux/actions/types';
 
@@ -35,11 +35,11 @@ class AppComponent extends React.Component<AppProps> {
           <div className='menu-container'>
             <Menu />
           </div>
+          <WebSocketService />
           <div className='header-title'>Chatty</div>
           {isConfigLoaded && <span className='build'>{configService.getConfig().BUILD}</span>}
         </div>
         <Messages />
-        <WebSocketService />
       </div>
     );
   }
