@@ -1,0 +1,3 @@
+& "F:\Projects\AWS\websocket-react-redux\scripts\common\util\scan-folder.ps1" -FolderPath "F:\Projects\AWS\websocket-react-redux\frontend\src\redux" -OutputFile redux.out
+& "F:\Projects\AWS\websocket-react-redux\scripts\common\util\scan-folder.ps1" -FolderPath "F:\Projects\AWS\websocket-react-redux\frontend\src\components" -OutputFile react-components.out
+& "F:\Projects\AWS\websocket-react-redux\scripts\common\util\scan-folder.ps1" -FolderPath "F:\Projects\AWS\websocket-react-redux\frontend\src\services" -OutputFile react-services.out

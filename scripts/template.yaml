@@ -1,0 +1,580 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: EncNotes Web App
+
+Globals:
+  Function:
+    Timeout: 5
+    MemorySize: 128
+
+Parameters:
+  StageName:
+    Type: String
+    AllowedValues:
+      - 'dev'
+      - 'prod'
+    Default: 'dev'
+  S3PublicAccess:
+    Description: 'Allow public access to the S3 bucket'
+    Type: String
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Default: 'false'
+  AllowOnlyCloudfrontOrigin:
+    Description: 'Allow only CloudFront origin'
+    Type: String
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Default: 'false'
+  ApiGatewayCorsAllowedMethods:
+    Type: String
+    Default: "'GET,POST,PUT,DELETE,OPTIONS'"
+    Description: 'Allowed HTTP methods for CORS'
+  ApiGatewayCorsAllowedHeaders:
+    Type: String
+    Default: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    Description: 'Allowed headers for CORS'
+  CustomDomainName:
+    Description: 'The custom domain name (optional)'
+    Type: String
+    Default: ''
+    AllowedPattern: '^$|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$'
+    ConstraintDescription: 'Must be a valid domain name or empty'
+  CertificateArn:
+    Description: 'Certificate ARN for the custom domain (optional)'
+    Type: String
+    Default: ''
+  ExistingElasticacheRedisClusterAddress:
+    Description: 'Address of an existing Redis cluster'
+    Type: String
+    Default: ''
+  ExistingVpcId:
+    Type: String
+    Description: 'ID of an existing VPC'
+  ExistingPrivateSubnetId:
+    Type: String
+    Description: 'ID of an existing private subnet'
+  ExistingUserPoolId:
+    Description: 'ID of an existing Cognito User Pool'
+    Type: String
+  ExistingCognitoDomain:
+    Description: 'Existing Cognito Domain'
+    Type: String
+  ExistingIdentityPoolId:
+    Description: 'ID of an existing Cognito Identity Pool'
+    Type: String
+
+Conditions:
+  HasCustomDomainName: !Not [!Equals [!Ref CustomDomainName, '']]
+  HasCertificateArn: !Not [!Equals [!Ref CertificateArn, '']]
+  UseCustomDomain: !And
+    - !Condition HasCustomDomainName
+    - !Condition HasCertificateArn
+  AllowS3PublicAccess: !Equals [!Ref S3PublicAccess, 'true']
+  AllowOnlyCloudfrontOriginCondition: !Equals [!Ref AllowOnlyCloudfrontOrigin, 'true']
+
+Resources:
+  # Cognito User Pool Client
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref ExistingUserPoolId
+      ClientName: !Sub '${AWS::StackName}-UserPoolClient'
+      GenerateSecret: false
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - phone
+        - email
+        - openid
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - !If # CloudFront URL (suffix /callback ?)
+          - UseCustomDomain
+          - !Sub 'https://${CustomDomainName}'
+          - !Sub 'https://${FrontendDistribution.DomainName}'
+        - 'http://localhost:3000'
+      LogoutURLs:
+        - !If # CloudFront URL (suffix /logout ?)
+          - UseCustomDomain
+          - !Sub 'https://${CustomDomainName}'
+          - !Sub 'https://${FrontendDistribution.DomainName}'
+        - 'http://localhost:3000'
+      SupportedIdentityProviders:
+        - Google
+    # DependsOn: UserPoolIdentityProviderGoogle
+
+  # ------------------------------------------------------------------------------
+  # s3 and cloudfront
+  # ------------------------------------------------------------------------------
+
+  # S3 Bucket for frontend hosting
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-frontend-static
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET]
+            AllowedOrigins: ['*']
+            MaxAge: 3000
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: !If [AllowS3PublicAccess, false, true]
+        BlockPublicPolicy: !If [AllowS3PublicAccess, false, true]
+        IgnorePublicAcls: !If [AllowS3PublicAccess, false, true]
+        RestrictPublicBuckets: !If [AllowS3PublicAccess, false, true]
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
+
+  # Bucket Policy to allow public read access
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub '${FrontendBucket.Arn}/*'
+
+  #  CloudFront Distribution
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - Id: S3Origin
+            DomainName: !Select [1, !Split ['//', !GetAtt FrontendBucket.WebsiteURL]]
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: http-only
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: ['GET', 'HEAD', 'OPTIONS']
+          CachedMethods: ['GET', 'HEAD']
+          ForwardedValues:
+            QueryString: false
+            Headers:
+              - Origin
+          MinTTL: 0
+          DefaultTTL: 86400
+          MaxTTL: 31536000
+        ViewerCertificate: !If
+          - UseCustomDomain # Use custom SSL certificate if UseCustomDomain is true, otherwise use the default CloudFront certificate
+          - AcmCertificateArn: !Ref CertificateArn
+            SslSupportMethod: sni-only
+          - CloudFrontDefaultCertificate: true
+        PriceClass: PriceClass_100
+        Enabled: true
+        Aliases: !If
+          - UseCustomDomain # Condition to check if custom domain should be used
+          - - !Ref CustomDomainName # If true, include the custom domain name
+          - !Ref AWS::NoValue # If false, do not include any value
+
+  # ------------------------------------------------------------------------------
+  # API gateway.
+  # ------------------------------------------------------------------------------
+
+  # CORS in AWS::Serverless::Api
+  # For REST APIs using AWS::Serverless::Api, AWS SAM simplifies CORS configuration.
+  # The properties you set under the Cors section automatically add the necessary headers to the HTTP responses for OPTIONS requests (preflight requests) along with the main REST request responses.
+
+  # AllowOrigin: This specifies which origins are allowed to access the API. Using "'*'" allows any origin.
+  # AllowMethods: Lists the HTTP methods allowed (e.g., GET, POST).
+  # AllowHeaders: Specifies which headers can be sent in requests to the API.
+  # GatewayResponses: You can customize the responses for common HTTP errors (4xx and 5xx) to ensure that CORS headers are
+
+  # ------------------------------------------------------------------------------
+  # Lambda layers.
+  # ------------------------------------------------------------------------------
+  jsonwebtokenLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ../backend/layers/jsonwebtoken-layer.zip
+      CompatibleRuntimes:
+        - nodejs20.x
+
+  AwsSdkV3Layer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      Description: AWS SDK v3 Layer
+      ContentUri: ../backend/layers/awssdkv3-layer.zip
+      CompatibleRuntimes:
+        - nodejs20.x
+
+  IoredisLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      Description: ioredis Layer
+      ContentUri: ../backend/layers/ioredis-layer.zip
+      CompatibleRuntimes:
+        - nodejs20.x
+
+  # ------------------------------------------------------------------------------
+  # Lambda functions for websockets handling
+  # ------------------------------------------------------------------------------
+  ConnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/websocket/connect/
+      Handler: connect.handler
+      Runtime: nodejs20.x
+      Layers:
+        - !Ref jsonwebtokenLayer
+        - !Ref IoredisLayer
+      Environment:
+        Variables:
+          ELASTICACHE_REDIS_ADDRESS: !Ref ExistingElasticacheRedisClusterAddress
+          STACK_NAME: !Ref AWS::StackName
+      VpcConfig:
+        SubnetIds:
+          - !Ref ExistingPrivateSubnetId
+        SecurityGroupIds:
+          - !Ref WebSocketLambdaSG
+      Role: !GetAtt WebSocketLambdaRole.Arn
+
+  DisconnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/websocket/disconnect/
+      Handler: disconnect.handler
+      Runtime: nodejs20.x
+      Layers:
+        - !Ref IoredisLayer
+      Environment:
+        Variables:
+          ELASTICACHE_REDIS_ADDRESS: !Ref ExistingElasticacheRedisClusterAddress
+          STACK_NAME: !Ref AWS::StackName
+      VpcConfig:
+        SubnetIds:
+          - !Ref ExistingPrivateSubnetId
+        SecurityGroupIds:
+          - !Ref WebSocketLambdaSG
+      Role: !GetAtt WebSocketLambdaRole.Arn
+
+  SendMessageFunction: # custom function to send a message to one or more active websocket connections
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/websocket/sendMessage/
+      Handler: sendMessage.handler
+      Runtime: nodejs20.x
+      Layers:
+        - !Ref IoredisLayer
+        - !Ref AwsSdkV3Layer
+      Environment:
+        Variables:
+          ELASTICACHE_REDIS_ADDRESS: !Ref ExistingElasticacheRedisClusterAddress
+          STACK_NAME: !Ref AWS::StackName
+          SQS_QUEUE_URL: !Ref MessagesToWebsocketsQueue
+      VpcConfig:
+        SubnetIds:
+          - !Ref ExistingPrivateSubnetId
+        SecurityGroupIds:
+          - !Ref WebSocketLambdaSG
+      Role: !GetAtt WebSocketLambdaRole.Arn
+
+  # Security group and IAM Role for WebSocket Lambda functions:
+  # -----------------------------------------------------------
+  WebSocketLambdaSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow WebSocket Lambda functions to access required AWS services
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-WebSocketLambdaSG'
+      VpcId: !Ref ExistingVpcId
+      SecurityGroupIngress: []
+      SecurityGroupEgress:
+        - IpProtocol: -1 # tcp   TODO: Too permissive
+          # FromPort: 6379 # Redis
+          # ToPort: 6379
+          CidrIp: 0.0.0.0/0 # TODO: Adjust as necessary to limit access: !Ref VpcCidrBlock
+
+  WebSocketLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        # - PolicyName: CloudWatchLogs
+        #   PolicyDocument:
+        #     Version: '2012-10-17'
+        #     Statement:
+        #       - Effect: Allow
+        #         Action:
+        #           - 'logs:CreateLogGroup'
+        #           - 'logs:CreateLogStream'
+        #           - 'logs:PutLogEvents'
+        #         Resource:
+        #           - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*'
+        - PolicyName: ElastiCacheAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'elasticache:Connect'
+                  - 'elasticache:DescribeCacheClusters'
+                Resource: '*'
+        - PolicyName: NetworkInterfaceAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ec2:CreateNetworkInterface'
+                  - 'ec2:DescribeNetworkInterfaces'
+                  - 'ec2:DeleteNetworkInterface'
+                Resource: '*'
+        - PolicyName: SQSSendMessagePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !GetAtt MessagesToWebsocketsQueue.Arn
+
+  # CORS in AWS::ApiGatewayV2::Api (WebSocket APIs)
+  # WebSocket APIs (defined with AWS::ApiGatewayV2::Api) do not directly utilize CORS in the same manner as REST APIs. This is because WebSocket communication is fundamentally different from HTTP communication.
+  # Here are some key points regarding WebSocket APIs and CORS:
+  #   CORS Not Applicable: WebSocket connections are initiated through an HTTP handshake (the initial connection is made using an HTTP request).
+  #     However, once the WebSocket connection is established, there's no concept of CORS since data is transmitted over a single long-lived connection.
+  #   Authorization and Security: Instead of CORS, you need to manage authorization through the WebSocket API's route-level authorization settings.
+  #     For instance, your ConnectRoute and DisconnectRoute can have defined AuthorizationType.
+  #   Preflight Requests: WebSocket connections do not typically require preflight OPTIONS requests like REST calls do.
+  #     However, if you are still facing issues establishing WebSocket connections, it could be due to misconfiguration of the WebSocket API or issues not directly related to CORS.
+
+  WebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub '${AWS::StackName}-WebSocketAPI'
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: '$request.body.action'
+
+  ConnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      Description: Connect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConnectFunction.Arn}/invocations
+
+  DisconnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      Description: Disconnect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DisconnectFunction.Arn}/invocations
+
+  SendMessageIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      Description: SendMessage Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SendMessageFunction.Arn}/invocations
+
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $connect
+      OperationName: ConnectRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref ConnectIntegration
+
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $disconnect
+      OperationName: DisconnectRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref DisconnectIntegration
+
+  SendMessageRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: SendMessage
+      OperationName: SendMessageRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref SendMessageIntegration
+
+  WebSocketDeployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+      - ConnectRoute
+      - DisconnectRoute
+    Properties:
+      ApiId: !Ref WebSocketApi
+
+  WebSocketLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/apigateway/${WebSocketApi}/Custom-access-logging/'
+      RetentionInDays: 7
+
+  WebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref WebSocketApi
+      StageName: !Ref StageName
+      AutoDeploy: false
+      DeploymentId: !Ref WebSocketDeployment
+      DefaultRouteSettings:
+        DetailedMetricsEnabled: true
+        LoggingLevel: ERROR
+      AccessLogSettings:
+        DestinationArn: !GetAtt WebSocketLogGroup.Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user", "requestTime":"$context.requestTime", "eventType":"$context.eventType", "routeKey":"$context.routeKey", "status":"$context.status", "connectionId":"$context.connectionId" }'
+
+  # AWS::Lambda::Permission resources are specifically required to grant permissions to other AWS services (in this case, API Gateway) to invoke your Lambda functions.
+  # These permissions are necessary because, by default, Lambda functions are not accessible to other AWS services.
+  # You need to explicitly allow API Gateway to invoke your ConnectFunction and DisconnectFunction.
+
+  ConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ConnectFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*/$connect'
+
+  DisconnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref DisconnectFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*/$disconnect'
+
+  SendMessagePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SendMessageFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*/SendMessage'
+
+  # ------------------------------------------------------------------------------
+  # SQS
+  # ------------------------------------------------------------------------------
+  MessagesToWebsocketsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${AWS::StackName}-messagesToWebsocketsQueue.fifo'
+      FifoQueue: true
+      ContentBasedDeduplication: true
+
+  ExtractMessagesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: extractMessages.handler
+      Runtime: nodejs20.x
+      CodeUri: ../backend/websocket/extractMessages/
+      Layers:
+        - !Ref AwsSdkV3Layer
+      Environment:
+        Variables:
+          WEBSOCKET_API_URL: !Sub 'wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}'
+      Role: !GetAtt ExtractMessagesLambdaExecutionRole.Arn
+      Events: # event source mapping
+        SQSTrigger:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt MessagesToWebsocketsQueue.Arn
+            BatchSize: 10
+            Enabled: true
+
+  ExtractMessagesLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName: SQSReceiveMessagePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource: !GetAtt MessagesToWebsocketsQueue.Arn
+        - PolicyName: WebSocketManageConnections
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 'execute-api:ManageConnections'
+                Resource: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*'
+
+Outputs:
+  S3BucketName:
+    Description: 'Name of the S3 bucket hosting the frontend'
+    Value: !Ref FrontendBucket
+  S3BucketUrl:
+    Description: 'URL of the S3 bucket hosting the frontend'
+    Value: !GetAtt FrontendBucket.WebsiteURL
+  CloudFrontUrl:
+    Description: 'CloudFront distribution URL'
+    Value: !Sub 'https://${FrontendDistribution.DomainName}'
+  CloudFrontDistributionId:
+    Description: 'CloudFront distribution ID'
+    Value: !Ref FrontendDistribution
+  AllowOnlyCloudfrontOrigin:
+    Value: !If
+      - AllowOnlyCloudfrontOriginCondition
+      - 'yes'
+      - 'no'
+
+  WebSocketApiUrl:
+    Description: 'URL for the WebSocket API Gateway'
+    Value: !Sub 'wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}'
+
+  UserPoolId:
+    Description: 'Cognito User Pool ID'
+    Value: !Ref ExistingUserPoolId
+  UserPoolClientId:
+    Description: 'Cognito User Pool Client ID'
+    Value: !Ref UserPoolClient
+  CognitoDomain:
+    Description: 'Cognito User Pool Domain'
+    Value: !Ref ExistingCognitoDomain

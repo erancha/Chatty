@@ -1,0 +1,8 @@
+frontend/node_modules/*
+websocket-react-redux/*
+setup/*
+backend/layers/awssdkv3/nodejs/node_modules/*
+backend/layers/ioredis/nodejs/node_modules/*
+backend/layers/jsonwebtoken/nodejs/node_modules/*
+scripts/.aws-sam/*
+scripts/common/util/*.out
