@@ -21,6 +21,7 @@ exports.handler = async (event) => {
   if (!decodedToken || !decodedToken.sub) {
     throw new Error('Invalid token: Missing user id (sub)');
   }
+  // console.log(JSON.stringify(decodedToken, null, 3));
   const currentUserId = decodedToken.sub; // Extract user id (sub) from the token
   const currentConnectionId = event.requestContext.connectionId;
 

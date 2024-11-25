@@ -7,13 +7,10 @@ export interface Message {
 
 export interface AuthState {
   isAuthenticated: boolean;
-  userName: string | null;
-  jwtToken: string | null;
-  error: string | null;
+  username: string | null;
 }
 
 export interface AppState {
-  isConfigLoaded: boolean;
   messages: Message[];
   lastSentMessage: string;
   wsConnected: boolean;

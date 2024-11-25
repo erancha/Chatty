@@ -45,16 +45,21 @@ function Display-FolderHierarchy {
     )
 
     $indentation = ' ' * ($Depth * 3)  # 3 spaces per depth level
-    $items = Get-ChildItem -Path $Path
+    $items = Get-ChildItem -Path $Path -Force
 
     foreach ($item in $items) {
         if ($item.PSIsContainer) {
-            Write-Content -Path "$indentation$item" -Content ''
-            # Recursively display contents of the subfolder
-            Display-FolderHierarchy -Path $item.FullName -Depth ($Depth + 1)
+            # Exclude specified folders
+            if ($item.Name -notin @('node_modules', '.git')) {  
+                Write-Content -Path "$indentation$item" -Content ''
+                # Recursively display contents of the subfolder
+                Display-FolderHierarchy -Path $item.FullName -Depth ($Depth + 1)
+            }
         } else {
-            # Display file name and write to output
-            Write-Content -Path "$indentation$item" -Content ''
+            # Process only specified file types
+            if ($item.Extension -in @('.js', '.jsx', '.ts', '.tsx', '.json') -and $item.Name -ne 'package-lock.json') {
+                Write-Content -Path "$indentation$item" -Content ''
+            }
         }
     }
 }
@@ -72,19 +77,24 @@ function Scan-Folder {
     )
 
     # Retrieve files and folders
-    $items = Get-ChildItem -Path $CurrentFolder
+    $items = Get-ChildItem -Path $CurrentFolder -Force
 
     foreach ($item in $items) {
         if ($item.PSIsContainer) {
-            # If it's a folder, write its path and call Scan-Folder recursively
-            $subfolderName = Join-Path -Path (Get-LastTwoParentFolders -Path $item.FullName) -ChildPath ($item.FullName -replace [regex]::Escape($FolderPath), '')
-            Write-Content -Path $subfolderName -Content '' -SeparatorChar '='
-            Scan-Folder -CurrentFolder $item.FullName
+            # Exclude specified folders
+            if ($item.Name -notin @('node_modules', '.git')) {  
+                # If it's a folder, write its path and call Scan-Folder recursively
+                $subfolderName = Join-Path -Path (Get-LastTwoParentFolders -Path $item.FullName) -ChildPath ($item.FullName -replace [regex]::Escape($FolderPath), '')
+                Write-Content -Path $subfolderName -Content '' -SeparatorChar '='
+                Scan-Folder -CurrentFolder $item.FullName
+            }
         } else {
-            # If it's a file, read its content and write to output
-            $fileName = "<folder>" + $item.FullName -replace [regex]::Escape($CurrentFolder), ''
-            $fileContent = Get-Content -Path $item.FullName -ErrorAction SilentlyContinue -Raw
-            Write-Content -Path $fileName -Content $fileContent -SeparatorChar '-'
+            # If it's a file, read its content and write to output only if it's a specified type
+            if ($item.Extension -in @('.js', '.jsx', '.ts', '.tsx', '.json') -and $item.Name -ne 'package-lock.json') {
+                $fileName = "<folder>" + $item.FullName -replace [regex]::Escape($CurrentFolder), ''
+                $fileContent = Get-Content -Path $item.FullName -ErrorAction SilentlyContinue -Raw
+                Write-Content -Path $fileName -Content $fileContent -SeparatorChar '-'
+            }
         }
     }
 }

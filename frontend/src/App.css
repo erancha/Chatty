@@ -11,6 +11,27 @@
   align-self: self-start;
 }
 
+.spinner {
+  border: 8px solid #f3f3f3; /* Light grey */
+  border-top: 8px solid #3498db; /* Blue */
+  border-radius: 50%;
+  position: absolute;
+  top: 20%;
+  left: 45%;
+  width: 40px; /* Size of the spinner */
+  height: 40px; /* Size of the spinner */
+  animation: spin 1s linear infinite; /* Spinning animation */
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .network-icon {
   vertical-align: middle;
 }
@@ -44,11 +65,15 @@
 }
 
 .menu-trigger {
-  padding: 0.2rem;
+  padding: 0.3rem;
   border-radius: 0.375rem;
   transition-property: background-color;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
+  border: 1px solid darkred;
+}
+.menu-trigger.authenticated {
+  border: 1px solid green;
 }
 
 .menu-trigger:hover {
@@ -94,6 +119,12 @@
   transition-property: background-color;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
+}
+
+.menu-item .app-menu-item {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
 }
 
 .header-title {

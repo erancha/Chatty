@@ -1,62 +1,96 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { toggleMenu, toggleTimeFilter } from '../redux/actions/actions';
-import { logoutUser } from '../redux/actions/authActions';
+import { loginWithGoogle, checkAuthStatus, logoutUser } from '../redux/actions/authActions';
 import { AppState } from '../redux/actions/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
-import Authentication from './Authentication';
+import { UserCircle, LogIn, Timer } from 'lucide-react';
+import { AuthContextProps, useAuth } from 'react-oidc-context';
 
 interface MenuProps {
   menuOpen: boolean;
-  timeFilterVisible: boolean;
   toggleMenu: (isOpen: boolean) => void;
+  timeFilterVisible: boolean;
   toggleTimeFilter: (isVisible: boolean) => void;
-  logoutUser: () => void;
   isAuthenticated: boolean;
+  loginWithGoogle: (auth: AuthContextProps) => void;
+  checkAuthStatus: (auth: AuthContextProps) => void;
+  logoutUser: (auth: AuthContextProps) => void;
 }
 
-const Menu: React.FC<MenuProps> = ({ menuOpen, timeFilterVisible, toggleMenu, toggleTimeFilter, logoutUser, isAuthenticated }) => {
-  return (
-    <DropdownMenu open={menuOpen} onOpenChange={(isOpen: boolean) => toggleMenu(isOpen)}>
-      <DropdownMenuTrigger className='menu-trigger'>
-        <div className='menu-icon'>
-          <div className='menu-icon-line'></div>
-          <div className='menu-icon-line'></div>
-          <div className='menu-icon-line'></div>
-        </div>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className='menu-content'>
-        <div className='menu-content-inner'>
-          <DropdownMenuItem className='menu-item'>
-            {!isAuthenticated ? (
-              <DropdownMenuItem className='menu-item'>
-                <Authentication />
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem className='menu-item' onClick={logoutUser}>
-                Sign Out
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuItem>
-          <DropdownMenuItem className='menu-item' onClick={() => toggleTimeFilter(!timeFilterVisible)}>
-            {timeFilterVisible ? 'Hide Time Filter' : 'Show Time Filter'}
-          </DropdownMenuItem>
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+// Functional component to wrap the class component
+export const Menu = (props: MenuProps) => {
+  const auth = useAuth();
+  return <ReduxConnectedMenu {...props} auth={auth} />;
 };
 
+class ReduxConnectedMenu extends React.Component<MenuProps & { auth: AuthContextProps }> {
+  componentDidUpdate(prevProps: MenuProps) {
+    if (prevProps.isAuthenticated !== this.props.isAuthenticated) {
+      this.props.checkAuthStatus(this.props.auth);
+    }
+  }
+
+  render() {
+    const { auth } = this.props;
+    return (
+      <DropdownMenu open={this.props.menuOpen} onOpenChange={(isOpen: boolean) => this.props.toggleMenu(isOpen)}>
+        <DropdownMenuTrigger className={`menu-trigger${this.props.isAuthenticated ? ' authenticated' : ''}`}>
+          <div className='menu-icon' title={this.props.isAuthenticated ? this.props.auth.user?.profile.name : ''}>
+            <div className='menu-icon-line'></div>
+            <div className='menu-icon-line'></div>
+            <div className='menu-icon-line'></div>
+          </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className='menu-content'>
+          <div className='menu-content-inner'>
+            <div>
+              {!this.props.isAuthenticated ? (
+                <DropdownMenuItem className='menu-item'>
+                  <div onClick={() => this.props.loginWithGoogle(auth)} className='app-menu-item'>
+                    <span>Sign In with Google</span>
+                    <UserCircle size={20} />
+                    <LogIn size={20} />
+                  </div>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem className='menu-item' onClick={() => this.props.logoutUser(auth)}>
+                  <div className='app-menu-item'>
+                    <span>Sign Out</span>
+                    <UserCircle size={20} />
+                  </div>
+                </DropdownMenuItem>
+              )}
+            </div>
+            {this.props.isAuthenticated && (
+              <DropdownMenuItem className='menu-item' onClick={() => this.props.toggleTimeFilter(!this.props.timeFilterVisible)}>
+                <div className='app-menu-item'>
+                  <span>{this.props.timeFilterVisible ? 'Hide Time Filter' : 'Show Time Filter'}</span>
+                  <Timer size={20} />
+                </div>
+              </DropdownMenuItem>
+            )}
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+}
+
 const mapStateToProps = (state: AppState) => ({
-  menuOpen: state.menuOpen,
+  menuOpen: !state.auth.isAuthenticated ? true : state.menuOpen,
   timeFilterVisible: state.timeFilterVisible,
   isAuthenticated: state.auth.isAuthenticated,
+  authenticatedUsername: state.auth.username,
 });
 
 const mapDispatchToProps = {
   toggleMenu,
   toggleTimeFilter,
+  loginWithGoogle,
+  checkAuthStatus,
   logoutUser,
 };
 
+// Export the wrapper as the default export
 export default connect(mapStateToProps, mapDispatchToProps)(Menu);

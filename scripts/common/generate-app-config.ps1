@@ -41,6 +41,7 @@ if (-Not (Test-Path $commonConstants.configFilePath)) {
             "userPoolId": "$cognito_user_pool_id",
             "userPoolWebClientId": "$cognito_user_pool_client_id",
             "domain": "$cognito_domain",
+            "region": "$($commonConstants.region)",
             "redirectSignIn": "$redirect_sign_in",
             "redirectSignOut": "$redirect_sign_out"
         }
@@ -57,9 +58,6 @@ if (-Not (Test-Path $commonConstants.configFilePath)) {
     $existing_config.BUILD = $build_time
     $existing_config.REST_API_URL = $rest_api_url
     $existing_config.WEBSOCKET_API_URL = $websocket_api_url
-    $existing_config.COGNITO.userPoolId = $cognito_user_pool_id
-    $existing_config.COGNITO.userPoolWebClientId = $cognito_user_pool_client_id
-    $existing_config.COGNITO.domain = $cognito_domain
     $existing_config.COGNITO.redirectSignIn = $redirect_sign_in
     $existing_config.COGNITO.redirectSignOut = $redirect_sign_out
 

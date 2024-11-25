@@ -1,5 +1,4 @@
 import {
-  SET_CONFIG_LOADED,
   TOGGLE_MENU,
   ADD_MESSAGE,
   SEND_MESSAGE_TO_WEBSOCKET,
@@ -8,7 +7,6 @@ import {
   MARK_MESSAGE_VIEWED,
   TOGGLE_TIME_FILTER,
   SET_TIME_WINDOW,
-  SetConfigLoadedAction,
   ToggleMenuAction,
   AddMessageAction,
   SendMessageToWebSocketAction,
@@ -18,12 +16,11 @@ import {
   ToggleTimeFilterAction,
   SetTimeWindowAction,
 } from '../actions/actions';
-import { AUTH_LOGIN_SUCCESS, AUTH_LOGIN_FAIL, AUTH_LOGOUT, AUTH_CLEAR_ERROR, AuthActionTypes } from '../actions/authActions';
+import { AUTH_LOGIN_SUCCESS, AUTH_LOGOUT, AuthActionTypes } from '../actions/authActions';
 import { AppState } from '../actions/types';
 import initialState from '../initialState';
 
 type AppAction =
-  | SetConfigLoadedAction
   | ToggleMenuAction
   | AddMessageAction
   | SendMessageToWebSocketAction
@@ -36,11 +33,6 @@ type AppAction =
 
 const rootReducer = (state = initialState, action: AppAction): AppState => {
   switch (action.type) {
-    case SET_CONFIG_LOADED:
-      return {
-        ...state,
-        isConfigLoaded: true,
-      };
     case TOGGLE_MENU:
       return { ...state, menuOpen: action.payload };
     case ADD_MESSAGE:
@@ -81,37 +73,16 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
         ...state,
         auth: {
           isAuthenticated: true,
-          userName: action.payload.userName,
-          jwtToken: action.payload.jwtToken,
-          error: null,
-        },
-      };
-    case AUTH_LOGIN_FAIL:
-      return {
-        ...state,
-        auth: {
-          isAuthenticated: false,
-          userName: null,
-          jwtToken: null,
-          error: action.payload,
+          username: action.payload.username,
         },
       };
     case AUTH_LOGOUT:
+      console.log('AUTH_LOGOUT');
       return {
         ...state,
         auth: {
           isAuthenticated: false,
-          userName: null,
-          jwtToken: null,
-          error: null,
-        },
-      };
-    case AUTH_CLEAR_ERROR:
-      return {
-        ...state,
-        auth: {
-          ...state.auth,
-          error: null,
+          username: null,
         },
       };
     default:

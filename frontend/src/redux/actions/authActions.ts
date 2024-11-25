@@ -1,83 +1,65 @@
+import { AuthContextProps } from 'react-oidc-context';
 import { Dispatch } from 'redux';
-import { jwtDecode } from 'jwt-decode';
-import { signInWithRedirect, signOut, fetchAuthSession } from '@aws-amplify/auth';
+import appConfigData from '../../appConfig.json';
 
 // Action Types
 export const AUTH_LOGIN_SUCCESS = 'AUTH_LOGIN_SUCCESS';
-export const AUTH_LOGIN_FAIL = 'AUTH_LOGIN_FAIL';
 export const AUTH_LOGOUT = 'AUTH_LOGOUT';
-export const AUTH_CLEAR_ERROR = 'AUTH_CLEAR_ERROR';
 
 // Action Interfaces
 interface AuthLoginSuccessAction {
   type: typeof AUTH_LOGIN_SUCCESS;
-  payload: { userName: string; jwtToken: string };
-}
-
-interface AuthLoginFailAction {
-  type: typeof AUTH_LOGIN_FAIL;
-  payload: string;
+  payload: { username: string };
 }
 
 interface AuthLogoutAction {
   type: typeof AUTH_LOGOUT;
 }
 
-interface AuthClearErrorAction {
-  type: typeof AUTH_CLEAR_ERROR;
-}
+const authLoginSuccess = (username: string): AuthLoginSuccessAction => ({
+  type: AUTH_LOGIN_SUCCESS,
+  payload: { username },
+});
+const authLogout = (): AuthLogoutAction => ({
+  type: AUTH_LOGOUT,
+});
 
-export type AuthActionTypes = AuthLoginSuccessAction | AuthLoginFailAction | AuthLogoutAction | AuthClearErrorAction;
+export type AuthActionTypes = AuthLoginSuccessAction | AuthLogoutAction;
 
 // Action Creators
-export const loginWithGoogle = () => async (dispatch: Dispatch) => {
+export const loginWithGoogle = (auth: AuthContextProps) => async (dispatch: Dispatch) => {
   try {
-    await signInWithRedirect({ provider: 'Google' });
+    await auth.signinRedirect();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Google Sign-in failed';
-    dispatch({
-      type: AUTH_LOGIN_FAIL,
-      payload: errorMessage,
-    });
+    console.error({ errorMessage });
+    dispatch(authLogout());
   }
 };
 
-export const checkAuthStatus = () => async (dispatch: Dispatch) => {
+export const checkAuthStatus = (auth: AuthContextProps) => async (dispatch: Dispatch) => {
   try {
-    const session = await fetchAuthSession();
-    const idToken = session.tokens?.idToken?.toString();
-
-    if (idToken) {
-      const decodedToken = jwtDecode<{ name?: string; email?: string }>(idToken);
-
-      dispatch({
-        type: AUTH_LOGIN_SUCCESS,
-        payload: {
-          userName: decodedToken.name || decodedToken.email || 'User',
-          jwtToken: idToken,
-        },
-      });
+    // console.log(`checkAuthStatus: ${JSON.stringify(auth.user, null, 3)}`);
+    if (auth.user?.profile.name) {
+      dispatch(authLoginSuccess(auth.user.profile.name));
     } else {
-      dispatch({ type: AUTH_LOGOUT });
+      if (auth.isAuthenticated) console.warn('Invalid auth.user');
+      dispatch(authLogout());
     }
   } catch (error) {
-    dispatch({ type: AUTH_LOGOUT });
+    console.error(error);
+    dispatch(authLogout());
   }
 };
 
-export const logoutUser = () => async (dispatch: Dispatch) => {
+export const logoutUser = (auth: AuthContextProps) => async (dispatch: Dispatch) => {
   try {
-    await signOut();
-    dispatch({ type: AUTH_LOGOUT });
+    await auth.removeUser();
+    window.location.href = `https://${appConfigData.COGNITO.domain}/logout?client_id=${appConfigData.COGNITO.userPoolWebClientId}&logout_uri=${appConfigData.COGNITO.redirectSignOut}`;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Logout failed';
-    dispatch({
-      type: AUTH_LOGIN_FAIL,
-      payload: errorMessage,
-    });
+    console.error({ errorMessage });
+  } finally {
+    dispatch(authLogout());
   }
 };
-
-export const clearAuthError = (): AuthClearErrorAction => ({
-  type: AUTH_CLEAR_ERROR,
-});

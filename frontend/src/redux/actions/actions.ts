@@ -9,15 +9,6 @@ export const TOGGLE_TIME_FILTER = 'TOGGLE_TIME_FILTER';
 export const SET_TIME_WINDOW = 'SET_TIME_WINDOW';
 export const SEND_MESSAGE = 'SEND_MESSAGE';
 export const SEND_MESSAGE_TO_WEBSOCKET = 'SEND_MESSAGE_TO_WEBSOCKET';
-export const SET_CONFIG_LOADED = 'SET_CONFIG_LOADED';
-
-export interface SetConfigLoadedAction {
-  type: typeof SET_CONFIG_LOADED;
-}
-
-export const setConfigLoaded = (): SetConfigLoadedAction => ({
-  type: SET_CONFIG_LOADED,
-});
 
 export interface ToggleMenuAction {
   type: typeof TOGGLE_MENU;

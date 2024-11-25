@@ -2,12 +2,10 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Send } from 'lucide-react';
 import { addMessage, setWSUrl, markMessageViewed, setTimeWindow, sendMessage } from '../redux/actions/actions';
-import { checkAuthStatus } from '../redux/actions/authActions';
 import { RootState } from '../redux/store/store';
 import { Message } from '../redux/actions/types';
 import { selectEffectiveTimeWindow } from '../redux/selectors/selectors';
 import '../App.css';
-import { configureAmplify } from '../util/amplifyConfig';
 
 interface MessagesProps {
   messages: Message[];
@@ -18,7 +16,6 @@ interface MessagesProps {
   setWSUrl: (url: string | null) => void;
   markMessageViewed: (messageId: string) => void;
   setTimeWindow: (minutes: number | null) => void;
-  checkAuthStatus: () => void;
 }
 
 interface MessagesState {
@@ -42,8 +39,6 @@ class Messages extends Component<MessagesProps, MessagesState> {
 
   constructor(props: MessagesProps) {
     super(props);
-    configureAmplify();
-    this.props.checkAuthStatus();
 
     this.state = {
       error: null,
@@ -169,7 +164,6 @@ const mapDispatchToProps = {
   setWSUrl,
   markMessageViewed,
   setTimeWindow,
-  checkAuthStatus,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Messages);

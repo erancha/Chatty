@@ -17,7 +17,7 @@ try {
     return @{
         isMainBranch            = $isMainBranch
         stackName               = $stackName
-        configFilePath          = "${appFolder}/frontend/public/appConfig.json"
+        configFilePath          = "${appFolder}/frontend/src/appConfig.json"
         lastDevConfigFilePath   = "${appFolder}/frontend/appConfigDev.json"
         region                  = aws configure get region # "eu-west-1"
     }
