@@ -13,6 +13,7 @@ const cognitoAuthConfig = {
   response_type: 'code',
   scope: 'email openid phone profile',
 };
+// console.log(JSON.stringify(cognitoAuthConfig, null, 2));
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 root.render(

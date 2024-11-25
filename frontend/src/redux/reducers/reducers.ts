@@ -77,7 +77,6 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
         },
       };
     case AUTH_LOGOUT:
-      console.log('AUTH_LOGOUT');
       return {
         ...state,
         auth: {

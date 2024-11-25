@@ -32,6 +32,7 @@ export const loginWithGoogle = (auth: AuthContextProps) => async (dispatch: Disp
     await auth.signinRedirect();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Google Sign-in failed';
+    // alert(errorMessage);
     console.error({ errorMessage });
     dispatch(authLogout());
   }
