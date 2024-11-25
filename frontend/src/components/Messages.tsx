@@ -124,7 +124,6 @@ class Messages extends Component<MessagesProps, MessagesState> {
             {filteredMessages.length > 0 && (
               <thead>
                 <tr className='table-title-row'>
-                  <th></th>
                   <th className='table-title'>Timestamp</th>
                   <th className='table-title'>Message</th>
                 </tr>
@@ -137,9 +136,6 @@ class Messages extends Component<MessagesProps, MessagesState> {
                   onClick={() => this.handleMessageClick(msg.id)}
                   className={`message-row ${msg.viewed ? 'viewed' : 'unviewed'}`}
                   style={{ cursor: 'pointer' }}>
-                  <td className='status'>
-                    <span className={`status-indicator ${msg.viewed ? 'viewed' : 'unviewed'}`}>{msg.viewed ? '✓' : '○'}</span>
-                  </td>
                   <td className='timestamp'>{new Date(msg.timestamp).toLocaleString('en-GB', options)}</td>
                   <td className='content'>{msg.content}</td>
                 </tr>

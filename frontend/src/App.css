@@ -167,7 +167,8 @@
 }
 
 .table-container .timestamp {
-  font-size: 0.75rem;
+  font-size: 8px;
+  vertical-align: bottom;
 }
 
 .table-container .message-row.unviewed .timestamp {
