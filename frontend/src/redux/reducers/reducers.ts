@@ -2,33 +2,33 @@ import {
   TOGGLE_OVERVIEW,
   TOGGLE_MENU,
   ADD_MESSAGE,
-  SEND_MESSAGE_TO_WEBSOCKET,
+  SEND_MESSAGE,
   SET_WS_CONNECTED,
   MARK_MESSAGE_VIEWED,
   TOGGLE_TIME_FILTER,
   SET_TIME_WINDOW,
-  IToggleOverviewAction,
-  ToggleMenuAction,
-  AddMessageAction,
-  SendMessageToWebSocketAction,
-  SetWSConnectedAction,
-  MarkMessageViewedAction,
-  ToggleTimeFilterAction,
-  SetTimeWindowAction,
+  IToggleOverview,
+  IToggleMenu,
+  IAddMessage,
+  ISendMessage,
+  ISetWSConnected,
+  IMarkMessageViewed,
+  IToggleTimeFilter,
+  ISetTimeWindow,
 } from '../actions/actions';
 import { AUTH_LOGIN_SUCCESS, AUTH_LOGOUT, AuthActionTypes } from '../actions/authActions';
 import { AppState } from '../actions/types';
 import initialState from '../initialState';
 
 type AppAction =
-  | IToggleOverviewAction
-  | ToggleMenuAction
-  | AddMessageAction
-  | SendMessageToWebSocketAction
-  | SetWSConnectedAction
-  | MarkMessageViewedAction
-  | ToggleTimeFilterAction
-  | SetTimeWindowAction
+  | IToggleOverview
+  | IToggleMenu
+  | IAddMessage
+  | ISendMessage
+  | ISetWSConnected
+  | IMarkMessageViewed
+  | IToggleTimeFilter
+  | ISetTimeWindow
   | AuthActionTypes;
 
 const rootReducer = (state = initialState, action: AppAction): AppState => {
@@ -37,45 +37,8 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
       return { ...state, showOverview: action.payload };
     case TOGGLE_MENU:
       return { ...state, menuOpen: action.payload };
-    case ADD_MESSAGE:
-      return {
-        ...state,
-        msg: {
-          ...state.msg,
-          messages: [
-            {
-              id: performance.now().toString(),
-              content: action.payload.content,
-              fromUsername: action.payload.fromUsername,
-              timestamp: Date.now(),
-              viewed: false,
-            },
-            ...state.msg.messages, // Access the messages from the new nested structure
-          ],
-        },
-      };
-    case SEND_MESSAGE_TO_WEBSOCKET:
-      return {
-        ...state,
-        msg: {
-          ...state.msg,
-          lastSentMessage: action.payload, // Update lastSentMessage in the new nested structure
-        },
-      };
-    case MARK_MESSAGE_VIEWED:
-      return {
-        ...state,
-        msg: {
-          ...state.msg,
-          messages: state.msg.messages.map((message) => (message.id === action.payload ? { ...message, viewed: true } : message)),
-        },
-      };
     case SET_WS_CONNECTED:
       return { ...state, wsConnected: action.payload };
-    case TOGGLE_TIME_FILTER:
-      return { ...state, timeFilterVisible: action.payload };
-    case SET_TIME_WINDOW:
-      return { ...state, timeWindowHours: action.payload };
 
     // Authentication Actions
     case AUTH_LOGIN_SUCCESS:
@@ -96,6 +59,46 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
           username: null,
         },
       };
+
+    case TOGGLE_TIME_FILTER:
+      return { ...state, timeFilterVisible: action.payload };
+    case SET_TIME_WINDOW:
+      return { ...state, timeWindowHours: action.payload };
+
+    case SEND_MESSAGE:
+      return {
+        ...state,
+        msg: {
+          ...state.msg,
+          lastSentMessage: action.payload, // Update lastSentMessage in the new nested structure
+        },
+      };
+    case ADD_MESSAGE:
+      return {
+        ...state,
+        msg: {
+          ...state.msg,
+          messages: [
+            {
+              id: performance.now().toString(),
+              content: action.payload.content,
+              fromUsername: action.payload.fromUsername,
+              timestamp: Date.now(),
+              viewed: action.payload.fromUsername === null,
+            },
+            ...state.msg.messages, // Access the messages from the new nested structure
+          ],
+        },
+      };
+    case MARK_MESSAGE_VIEWED:
+      return {
+        ...state,
+        msg: {
+          ...state.msg,
+          messages: state.msg.messages.map((message) => (message.id === action.payload ? { ...message, viewed: true } : message)),
+        },
+      };
+
     default:
       return state;
   }

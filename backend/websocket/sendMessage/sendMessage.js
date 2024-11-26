@@ -3,7 +3,7 @@ const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 
 exports.handler = async (event) => {
   // console.log(JSON.stringify(event, null, 2));
-  const currentConnectionId = event.requestContext.connectionId;
+  const senderConnectionId = event.requestContext.connectionId;
   const { message } = JSON.parse(event.body).data;
 
   const redisClient = new Redis(process.env.ELASTICACHE_REDIS_ADDRESS);
@@ -12,12 +12,12 @@ exports.handler = async (event) => {
   // Lua script
   const luaScript = `
 local stackName = ARGV[1]
-local connectionId = ARGV[2]
+local senderConnectionId = ARGV[2]
 
--- Retrieve the userId, userName and chatId of the current connection id:
-local userId   = redis.call('GET', stackName .. ':userId:' .. connectionId)
-local userName = redis.call('GET', stackName .. ':userName:' .. connectionId)
-local chatId   = redis.call('GET', stackName .. ':chatId:' .. connectionId)
+-- Retrieve the userId, userName and chatId of senderConnectionId:
+local userId   = redis.call('GET', stackName .. ':userId:' .. senderConnectionId)
+local userName = redis.call('GET', stackName .. ':userName:' .. senderConnectionId)
+local chatId   = redis.call('GET', stackName .. ':chatId:' .. senderConnectionId)
 
 -- Return the updated chat's connections set:
 local connectionIds = redis.call('SMEMBERS', stackName .. ':connections:' .. chatId)
@@ -25,7 +25,7 @@ return {userName, connectionIds}
 `;
 
   // Execute the Lua script and extract username and connection IDs from the response
-  const response = await redisClient.eval(luaScript, 0, stackName, currentConnectionId);
+  const response = await redisClient.eval(luaScript, 0, stackName, senderConnectionId);
   let username;
   let connectionIds;
   if (response) {
@@ -44,9 +44,12 @@ return {userName, connectionIds}
 
   for (const connectionId of connectionIds) {
     try {
-      sqsParams.MessageBody = JSON.stringify({ connectionId, message: { content: message, fromUsername: username } });
-      console.log(`Inserting a message to the queue: ${sqsParams.MessageBody}`);
-      await sqsClient.send(new SendMessageCommand(sqsParams));
+      // the sender adds the message directly to the view, therefore it's redundant to send the message again thru websocket.
+      if (connectionId !== senderConnectionId) {
+        sqsParams.MessageBody = JSON.stringify({ connectionId, message: { content: message, fromUsername: username } });
+        console.log(`Inserting a message to the queue: ${sqsParams.MessageBody}`);
+        await sqsClient.send(new SendMessageCommand(sqsParams));
+      }
     } catch (error) {
       console.error(error);
     }

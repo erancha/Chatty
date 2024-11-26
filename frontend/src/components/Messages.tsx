@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Send } from 'lucide-react';
-import { IMessage, INewMessage } from '../redux/actions/types';
-import { addMessage, markMessageViewed, setTimeWindow, sendMessage } from '../redux/actions/actions';
+import { IMessage } from '../redux/actions/types';
+import { markMessageViewed, setTimeWindow, sendMessage } from '../redux/actions/actions';
 import { RootState } from '../redux/store/store';
 import { selectEffectiveTimeWindow } from '../redux/selectors/selectors';
 import '../App.css';
@@ -11,7 +11,6 @@ interface MessagesProps {
   messages: IMessage[];
   timeFilterVisible: boolean;
   timeWindowHours: number | null;
-  addMessage: (message: INewMessage) => void;
   sendMessage: (message: string) => void;
   markMessageViewed: (messageId: string) => void;
   setTimeWindow: (minutes: number | null) => void;
@@ -156,7 +155,6 @@ const mapStateToProps = (state: RootState) => ({
 });
 
 const mapDispatchToProps = {
-  addMessage,
   sendMessage,
   markMessageViewed,
   setTimeWindow,

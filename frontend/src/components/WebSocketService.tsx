@@ -55,21 +55,19 @@ class WebSocketService extends Component<Props> {
     // );
     // If a new message is sent to websocket, send it
     if (prevProps.lastSentMessage !== this.props.lastSentMessage && this.props.lastSentMessage) {
-      this.sendMessage(this.props.lastSentMessage);
+      const message = this.props.lastSentMessage;
+      this.props.addMessage({ content: message, fromUsername: null });
+      this.webSocket?.send(
+        JSON.stringify({
+          action: 'SendMessage',
+          data: { message },
+        })
+      );
     }
   }
 
   componentWillUnmount() {
     this.cleanup();
-  }
-
-  private sendMessage(message: string) {
-    this.webSocket?.send(
-      JSON.stringify({
-        action: 'SendMessage',
-        data: { message },
-      })
-    );
   }
 
   private formatLog(message: string): string {

@@ -41,8 +41,7 @@ class AppComponent extends React.Component<AppProps & { auth: AuthContextProps }
               <div className='app-overview'>
                 <hr />
                 <ul className='header2'>
-                  <li>The application allows authenticated users to chat, in groups or in private chats.</li>
-                  <li>The infrastructure is in Amazon Web Services (AWS).</li>
+                  <li>Chatty allows authenticated users to chat, in groups or in private chats.</li>
                 </ul>
 
                 <div className='link-container'>

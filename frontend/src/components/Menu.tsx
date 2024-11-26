@@ -1,6 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import { toggleOverview, IToggleOverviewAction, toggleMenu, toggleTimeFilter } from '../redux/actions/actions';
+import { toggleOverview, IToggleOverview, toggleMenu, toggleTimeFilter } from '../redux/actions/actions';
 import { loginWithGoogle, checkAuthStatus, logoutUser } from '../redux/actions/authActions';
 import { AppState } from '../redux/actions/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
@@ -9,7 +9,7 @@ import { AuthContextProps, useAuth } from 'react-oidc-context';
 
 interface MenuProps {
   showOverview: boolean;
-  toggleOverview: (show: boolean) => IToggleOverviewAction;
+  toggleOverview: (show: boolean) => IToggleOverview;
   menuOpen: boolean;
   toggleMenu: (isOpen: boolean) => void;
   timeFilterVisible: boolean;
