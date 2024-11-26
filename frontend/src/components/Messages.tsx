@@ -23,12 +23,8 @@ interface MessagesState {
 }
 
 const options: Intl.DateTimeFormatOptions = {
-  year: 'numeric',
-  month: 'numeric',
-  day: 'numeric',
   hour: 'numeric',
   minute: 'numeric',
-  second: 'numeric',
   hour12: false,
 };
 
@@ -96,7 +92,7 @@ class Messages extends Component<MessagesProps, MessagesState> {
     const filteredMessages = this.getFilteredMessages();
 
     return (
-      <div className='sub-container'>
+      <div className='messages-container'>
         {timeFilterVisible && (
           <div className='time-filter-container'>
             <div className='time-filter-title'>Time Filter:</div>
@@ -116,32 +112,17 @@ class Messages extends Component<MessagesProps, MessagesState> {
             <Send />
           </button>
         </div>
-
-        <div className='table-container'>
-          <table>
-            {filteredMessages.length > 0 && (
-              <thead>
-                <tr className='table-title-row'>
-                  <th className='table-title'>Timestamp</th>
-                  <th className='table-title'>From</th>
-                  <th className='table-title'>Message</th>
-                </tr>
-              </thead>
-            )}
-            <tbody>
-              {filteredMessages.map((msg) => (
-                <tr
-                  key={msg.id}
-                  onClick={() => this.handleMessageClick(msg.id)}
-                  className={`message-row ${msg.viewed ? 'viewed' : 'unviewed'}`}
-                  style={{ cursor: 'pointer' }}>
-                  <td className='timestamp'>{new Date(msg.timestamp).toLocaleString('en-GB', options)}</td>
-                  <td className='from-user-name'>{msg.fromUsername}</td>
-                  <td className='content'>{msg.content}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className='messages-list'>
+          {filteredMessages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`message-bubble ${msg.fromUsername === null ? 'local' : 'others'} ${msg.viewed ? 'viewed' : 'unviewed'}`}
+              onClick={() => this.handleMessageClick(msg.id)}>
+              <div className='message-sender'>{msg.fromUsername}</div>
+              <div className='message-content'>{msg.content}</div>
+              <div className='message-timestamp'>{new Date(msg.timestamp).toLocaleString('en-US', options)}</div>
+            </div>
+          ))}
         </div>
       </div>
     );
