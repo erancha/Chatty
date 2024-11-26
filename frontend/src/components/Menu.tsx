@@ -1,13 +1,15 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import { toggleMenu, toggleTimeFilter } from '../redux/actions/actions';
+import { toggleOverview, IToggleOverviewAction, toggleMenu, toggleTimeFilter } from '../redux/actions/actions';
 import { loginWithGoogle, checkAuthStatus, logoutUser } from '../redux/actions/authActions';
 import { AppState } from '../redux/actions/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
-import { UserCircle, LogIn, Timer } from 'lucide-react';
+import { UserCircle, LogIn, Timer, BookOpenText } from 'lucide-react';
 import { AuthContextProps, useAuth } from 'react-oidc-context';
 
 interface MenuProps {
+  showOverview: boolean;
+  toggleOverview: (show: boolean) => IToggleOverviewAction;
   menuOpen: boolean;
   toggleMenu: (isOpen: boolean) => void;
   timeFilterVisible: boolean;
@@ -25,6 +27,12 @@ export const Menu = (props: MenuProps) => {
 };
 
 class ReduxConnectedMenu extends React.Component<MenuProps & { auth: AuthContextProps }> {
+  async componentDidMount() {
+    setTimeout(() => {
+      if (!this.props.isAuthenticated) this.props.toggleMenu(true);
+    }, 1000);
+  }
+
   componentDidUpdate(prevProps: MenuProps) {
     if (prevProps.isAuthenticated !== this.props.isAuthenticated) {
       this.props.checkAuthStatus(this.props.auth);
@@ -62,11 +70,18 @@ class ReduxConnectedMenu extends React.Component<MenuProps & { auth: AuthContext
                 </DropdownMenuItem>
               )}
             </div>
-            {this.props.isAuthenticated && (
+            {this.props.isAuthenticated ? (
               <DropdownMenuItem className='menu-item' onClick={() => this.props.toggleTimeFilter(!this.props.timeFilterVisible)}>
                 <div className='app-menu-item'>
                   <span>{this.props.timeFilterVisible ? 'Hide Time Filter' : 'Show Time Filter'}</span>
                   <Timer size={20} />
+                </div>
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem className='menu-item' onClick={() => this.props.toggleOverview(!this.props.showOverview)}>
+                <div className='app-menu-item'>
+                  <span>{`${this.props.showOverview ? 'Hide' : 'Show'} Overview`}</span>
+                  <BookOpenText size={20} />
                 </div>
               </DropdownMenuItem>
             )}
@@ -78,13 +93,15 @@ class ReduxConnectedMenu extends React.Component<MenuProps & { auth: AuthContext
 }
 
 const mapStateToProps = (state: AppState) => ({
-  menuOpen: !state.auth.isAuthenticated ? true : state.menuOpen,
+  showOverview: state.showOverview,
+  menuOpen: state.menuOpen,
   timeFilterVisible: state.timeFilterVisible,
   isAuthenticated: state.auth.isAuthenticated,
   authenticatedUsername: state.auth.username,
 });
 
 const mapDispatchToProps = {
+  toggleOverview,
   toggleMenu,
   toggleTimeFilter,
   loginWithGoogle,

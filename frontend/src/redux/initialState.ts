@@ -3,6 +3,7 @@ import { DEFAULT_TIME_WINDOW_HOURS } from './constants';
 import { loadMessagesFromStorage } from './middleware/localStorage';
 
 const initialState: AppState = {
+  showOverview: false,
   auth: {
     isAuthenticated: false,
     jwtToken: null,

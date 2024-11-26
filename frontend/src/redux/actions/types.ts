@@ -22,6 +22,7 @@ export interface MessagesState {
 }
 
 export interface AppState {
+  showOverview: boolean;
   auth: AuthState;
   wsConnected: boolean;
   msg: MessagesState;

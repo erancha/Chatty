@@ -1,4 +1,5 @@
 import {
+  TOGGLE_OVERVIEW,
   TOGGLE_MENU,
   ADD_MESSAGE,
   SEND_MESSAGE_TO_WEBSOCKET,
@@ -6,6 +7,7 @@ import {
   MARK_MESSAGE_VIEWED,
   TOGGLE_TIME_FILTER,
   SET_TIME_WINDOW,
+  IToggleOverviewAction,
   ToggleMenuAction,
   AddMessageAction,
   SendMessageToWebSocketAction,
@@ -19,6 +21,7 @@ import { AppState } from '../actions/types';
 import initialState from '../initialState';
 
 type AppAction =
+  | IToggleOverviewAction
   | ToggleMenuAction
   | AddMessageAction
   | SendMessageToWebSocketAction
@@ -30,6 +33,8 @@ type AppAction =
 
 const rootReducer = (state = initialState, action: AppAction): AppState => {
   switch (action.type) {
+    case TOGGLE_OVERVIEW:
+      return { ...state, showOverview: action.payload };
     case TOGGLE_MENU:
       return { ...state, menuOpen: action.payload };
     case ADD_MESSAGE:

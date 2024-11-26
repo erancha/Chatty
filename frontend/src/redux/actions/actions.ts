@@ -1,6 +1,7 @@
 import { Dispatch } from 'redux';
 import { INewMessage } from './types';
 
+export const TOGGLE_OVERVIEW = 'TOGGLE_OVERVIEW';
 export const TOGGLE_MENU = 'TOGGLE_MENU';
 export const ADD_MESSAGE = 'ADD_MESSAGE';
 export const SET_WS_CONNECTED = 'SET_WS_CONNECTED';
@@ -9,6 +10,16 @@ export const TOGGLE_TIME_FILTER = 'TOGGLE_TIME_FILTER';
 export const SET_TIME_WINDOW = 'SET_TIME_WINDOW';
 export const SEND_MESSAGE = 'SEND_MESSAGE';
 export const SEND_MESSAGE_TO_WEBSOCKET = 'SEND_MESSAGE_TO_WEBSOCKET';
+
+export interface IToggleOverviewAction {
+  type: typeof TOGGLE_OVERVIEW;
+  payload: boolean;
+}
+
+export const toggleOverview = (show: boolean): IToggleOverviewAction => ({
+  type: TOGGLE_OVERVIEW,
+  payload: show,
+});
 
 export interface ToggleMenuAction {
   type: typeof TOGGLE_MENU;
