@@ -166,8 +166,9 @@
   padding: 0 0.5rem;
 }
 
-.table-container .timestamp {
-  font-size: 8px;
+.table-container .timestamp,
+.table-container .from-user-name {
+  font-size: 9px;
   vertical-align: bottom;
 }
 
@@ -177,6 +178,7 @@
 
 .table-container .content {
   font-size: 0.9rem;
+  vertical-align: bottom;
 }
 
 .message-row {

@@ -21,20 +21,25 @@ exports.handler = async (event) => {
   if (!decodedToken || !decodedToken.sub) {
     throw new Error('Invalid token: Missing user id (sub)');
   }
-  // console.log(JSON.stringify(decodedToken, null, 3));
-  const currentUserId = decodedToken.sub; // Extract user id (sub) from the token
-  const currentConnectionId = event.requestContext.connectionId;
 
-  // -- Store the user ID for the connection ID
+  // Extract user id (sub) and user name from the token
+  // console.log(JSON.stringify(decodedToken, null, 3));
+  const currentConnectionId = event.requestContext.connectionId;
+  const currentUserId = decodedToken.sub;
+  const currentUserName = decodedToken.name;
+
+  // -- Store the user ID and name for the connection ID
   // -- Add the connection ID to the user's connections set
   // -- Retrieve and return all connection IDs for the user
   const luaScript = `
-local currentUserId = KEYS[1]
-local currentConnectionId = KEYS[2]
+local currentConnectionId = KEYS[1]
+local currentUserId = KEYS[2]
+local currentUserName = KEYS[3]
 local stackName = ARGV[1]
 
--- Store the user ID for the connection ID
-redis.call('set', stackName .. ':users:' .. currentConnectionId, currentUserId)
+-- Store the user ID and name for the connection ID
+redis.call('set', stackName .. ':userId:' .. currentConnectionId, currentUserId)
+redis.call('set', stackName .. ':userName:' .. currentConnectionId, currentUserName)
 
 -- Add the connection ID to the user's connections set
 redis.call('sadd', stackName .. ':connections:' .. currentUserId, currentConnectionId)
@@ -44,7 +49,7 @@ return redis.call('smembers', stackName .. ':connections:' .. currentUserId)
 `;
 
   try {
-    const connectionIds = await redisClient.eval(luaScript, 2, currentUserId, currentConnectionId, process.env.STACK_NAME);
+    const connectionIds = await redisClient.eval(luaScript, 3, currentConnectionId, currentUserId, currentUserName, process.env.STACK_NAME);
     console.log(JSON.stringify({ currentConnectionId, connectionIds }));
     return { statusCode: 200 };
   } catch (error) {

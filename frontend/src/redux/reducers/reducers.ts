@@ -3,7 +3,6 @@ import {
   ADD_MESSAGE,
   SEND_MESSAGE_TO_WEBSOCKET,
   SET_WS_CONNECTED,
-  SET_WS_URL,
   MARK_MESSAGE_VIEWED,
   TOGGLE_TIME_FILTER,
   SET_TIME_WINDOW,
@@ -11,7 +10,6 @@ import {
   AddMessageAction,
   SendMessageToWebSocketAction,
   SetWSConnectedAction,
-  SetWSUrlAction,
   MarkMessageViewedAction,
   ToggleTimeFilterAction,
   SetTimeWindowAction,
@@ -25,7 +23,6 @@ type AppAction =
   | AddMessageAction
   | SendMessageToWebSocketAction
   | SetWSConnectedAction
-  | SetWSUrlAction
   | MarkMessageViewedAction
   | ToggleTimeFilterAction
   | SetTimeWindowAction
@@ -41,7 +38,8 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
         messages: [
           {
             id: performance.now().toString(),
-            content: action.payload,
+            content: action.payload.content,
+            fromUsername: action.payload.fromUsername,
             timestamp: Date.now(),
             viewed: false,
           },
@@ -60,8 +58,6 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
       };
     case SET_WS_CONNECTED:
       return { ...state, wsConnected: action.payload };
-    case SET_WS_URL:
-      return { ...state, wsUrl: action.payload };
     case TOGGLE_TIME_FILTER:
       return { ...state, timeFilterVisible: action.payload };
     case SET_TIME_WINDOW:
@@ -73,6 +69,7 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
         ...state,
         auth: {
           isAuthenticated: true,
+          jwtToken: action.payload.jwtToken,
           username: action.payload.username,
         },
       };
@@ -81,6 +78,7 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
         ...state,
         auth: {
           isAuthenticated: false,
+          jwtToken: null,
           username: null,
         },
       };

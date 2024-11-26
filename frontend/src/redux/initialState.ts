@@ -6,12 +6,12 @@ const initialState: AppState = {
   messages: loadMessagesFromStorage(),
   lastSentMessage: '',
   wsConnected: false,
-  wsUrl: null,
   menuOpen: false,
   timeFilterVisible: false,
   timeWindowHours: DEFAULT_TIME_WINDOW_HOURS,
   auth: {
     isAuthenticated: false,
+    jwtToken: null,
     username: null,
   },
 };

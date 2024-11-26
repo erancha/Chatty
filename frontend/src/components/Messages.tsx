@@ -1,19 +1,18 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { Send } from 'lucide-react';
-import { addMessage, setWSUrl, markMessageViewed, setTimeWindow, sendMessage } from '../redux/actions/actions';
+import { IMessage, INewMessage } from '../redux/actions/types';
+import { addMessage, markMessageViewed, setTimeWindow, sendMessage } from '../redux/actions/actions';
 import { RootState } from '../redux/store/store';
-import { Message } from '../redux/actions/types';
 import { selectEffectiveTimeWindow } from '../redux/selectors/selectors';
 import '../App.css';
 
 interface MessagesProps {
-  messages: Message[];
+  messages: IMessage[];
   timeFilterVisible: boolean;
   timeWindowHours: number | null;
-  addMessage: (message: string) => void;
+  addMessage: (message: INewMessage) => void;
   sendMessage: (message: string) => void;
-  setWSUrl: (url: string | null) => void;
   markMessageViewed: (messageId: string) => void;
   setTimeWindow: (minutes: number | null) => void;
 }
@@ -125,6 +124,7 @@ class Messages extends Component<MessagesProps, MessagesState> {
               <thead>
                 <tr className='table-title-row'>
                   <th className='table-title'>Timestamp</th>
+                  <th className='table-title'>From</th>
                   <th className='table-title'>Message</th>
                 </tr>
               </thead>
@@ -137,6 +137,7 @@ class Messages extends Component<MessagesProps, MessagesState> {
                   className={`message-row ${msg.viewed ? 'viewed' : 'unviewed'}`}
                   style={{ cursor: 'pointer' }}>
                   <td className='timestamp'>{new Date(msg.timestamp).toLocaleString('en-GB', options)}</td>
+                  <td className='from-user-name'>{msg.fromUsername}</td>
                   <td className='content'>{msg.content}</td>
                 </tr>
               ))}
@@ -157,7 +158,6 @@ const mapStateToProps = (state: RootState) => ({
 const mapDispatchToProps = {
   addMessage,
   sendMessage,
-  setWSUrl,
   markMessageViewed,
   setTimeWindow,
 };

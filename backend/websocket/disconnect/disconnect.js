@@ -8,7 +8,7 @@ exports.handler = async (event) => {
   try {
     // Retrieve the currentUserId associated with currentConnectionId
     const stackName = process.env.STACK_NAME;
-    const currentUserId = await redisClient.get(`${stackName}:users:${currentConnectionId}`);
+    const currentUserId = await redisClient.get(`${stackName}:userId:${currentConnectionId}`);
     if (currentUserId) {
       // -- Remove the connection ID from the user's connections set
       // -- Remove the mapping from currentConnectionId to userId
@@ -21,8 +21,9 @@ exports.handler = async (event) => {
         -- Remove the connection ID from the user's connections set
         redis.call('srem', stackName .. ':connections:' .. currentUserId, currentConnectionId)
         
-        -- Remove the mapping from currentConnectionId to userId
-        redis.call('del', stackName .. ':users:' .. currentConnectionId)
+        -- Remove the mapping from currentConnectionId to userId and userName
+        redis.call('del', stackName .. ':userId:' .. currentConnectionId)
+        redis.call('del', stackName .. ':userName:' .. currentConnectionId)
         
         -- Return the updated set members
         return redis.call('smembers', stackName .. ':connections:' .. currentUserId)

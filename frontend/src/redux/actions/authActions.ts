@@ -9,16 +9,16 @@ export const AUTH_LOGOUT = 'AUTH_LOGOUT';
 // Action Interfaces
 interface AuthLoginSuccessAction {
   type: typeof AUTH_LOGIN_SUCCESS;
-  payload: { username: string };
+  payload: { jwtToken: string; username: string };
 }
 
 interface AuthLogoutAction {
   type: typeof AUTH_LOGOUT;
 }
 
-const authLoginSuccess = (username: string): AuthLoginSuccessAction => ({
+const authLoginSuccess = (jwtToken: string, username: string): AuthLoginSuccessAction => ({
   type: AUTH_LOGIN_SUCCESS,
-  payload: { username },
+  payload: { jwtToken, username },
 });
 const authLogout = (): AuthLogoutAction => ({
   type: AUTH_LOGOUT,
@@ -41,8 +41,8 @@ export const loginWithGoogle = (auth: AuthContextProps) => async (dispatch: Disp
 export const checkAuthStatus = (auth: AuthContextProps) => async (dispatch: Dispatch) => {
   try {
     // console.log(`checkAuthStatus: ${JSON.stringify(auth.user, null, 3)}`);
-    if (auth.user?.profile.name) {
-      dispatch(authLoginSuccess(auth.user.profile.name));
+    if (auth.user?.profile.name && auth.user.id_token) {
+      dispatch(authLoginSuccess(auth.user.id_token.toString(), auth.user.profile.name));
     } else {
       if (auth.isAuthenticated) console.warn('Invalid auth.user');
       dispatch(authLogout());
