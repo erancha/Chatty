@@ -170,6 +170,7 @@
 .table-container .from-user-name {
   font-size: 9px;
   vertical-align: bottom;
+  background-color: white;
 }
 
 .table-container .message-row.unviewed .timestamp {

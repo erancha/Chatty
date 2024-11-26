@@ -35,26 +35,35 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
     case ADD_MESSAGE:
       return {
         ...state,
-        messages: [
-          {
-            id: performance.now().toString(),
-            content: action.payload.content,
-            fromUsername: action.payload.fromUsername,
-            timestamp: Date.now(),
-            viewed: false,
-          },
-          ...state.messages,
-        ],
+        msg: {
+          ...state.msg,
+          messages: [
+            {
+              id: performance.now().toString(),
+              content: action.payload.content,
+              fromUsername: action.payload.fromUsername,
+              timestamp: Date.now(),
+              viewed: false,
+            },
+            ...state.msg.messages, // Access the messages from the new nested structure
+          ],
+        },
       };
     case SEND_MESSAGE_TO_WEBSOCKET:
       return {
         ...state,
-        lastSentMessage: action.payload,
+        msg: {
+          ...state.msg,
+          lastSentMessage: action.payload, // Update lastSentMessage in the new nested structure
+        },
       };
     case MARK_MESSAGE_VIEWED:
       return {
         ...state,
-        messages: state.messages.map((message) => (message.id === action.payload ? { ...message, viewed: true } : message)),
+        msg: {
+          ...state.msg,
+          messages: state.msg.messages.map((message) => (message.id === action.payload ? { ...message, viewed: true } : message)),
+        },
       };
     case SET_WS_CONNECTED:
       return { ...state, wsConnected: action.payload };

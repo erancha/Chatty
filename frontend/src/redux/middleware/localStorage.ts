@@ -16,7 +16,7 @@ export const localStorageMiddleware: Middleware = (store) => (next) => (action) 
 
   if (action.type === ADD_MESSAGE || action.type === MARK_MESSAGE_VIEWED) {
     const state = store.getState() as AppState;
-    localStorage.setItem('messages', JSON.stringify(state.messages));
+    localStorage.setItem('messages', JSON.stringify(state.msg.messages));
   }
 
   return result;

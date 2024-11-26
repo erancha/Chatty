@@ -14,15 +14,13 @@ exports.handler = async (event) => {
 local stackName = ARGV[1]
 local connectionId = ARGV[2]
 
-local userId = redis.call('GET', stackName .. ':userId:' .. connectionId)
-
-if not userId then
-    return nil
-end
-
+-- Retrieve the userId, userName and chatId of the current connection id:
+local userId   = redis.call('GET', stackName .. ':userId:' .. connectionId)
 local userName = redis.call('GET', stackName .. ':userName:' .. connectionId)
-local connectionIds = redis.call('SMEMBERS', stackName .. ':connections:' .. userId)
+local chatId   = redis.call('GET', stackName .. ':chatId:' .. connectionId)
 
+-- Return the updated chat's connections set:
+local connectionIds = redis.call('SMEMBERS', stackName .. ':connections:' .. chatId)
 return {userName, connectionIds}
 `;
 

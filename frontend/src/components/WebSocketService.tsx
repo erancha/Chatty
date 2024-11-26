@@ -26,7 +26,7 @@ class WebSocketService extends Component<Props> {
 
       // Try connecting to the WebSocket server:
       if (this.props.jwtToken && !this.props.wsConnected) {
-        const wsUrl = `${appConfigData.WEBSOCKET_API_URL}?token=${this.props.jwtToken}`;
+        const wsUrl = `${appConfigData.WEBSOCKET_API_URL}?token=${this.props.jwtToken}&chatId=${this.props.chatId}`;
         this.connect(wsUrl);
       }
     } catch (err) {
@@ -121,7 +121,7 @@ class WebSocketService extends Component<Props> {
     };
 
     this.webSocket.onmessage = (event) => {
-      console.log(event.data);
+      // console.log(event.data);
       this.props.addMessage(JSON.parse(event.data));
     };
 
@@ -160,7 +160,8 @@ class WebSocketService extends Component<Props> {
 const mapStateToProps = (state: RootState) => ({
   jwtToken: state.auth.jwtToken,
   wsConnected: state.wsConnected,
-  lastSentMessage: state.lastSentMessage,
+  chatId: state.msg.chatId,
+  lastSentMessage: state.msg.lastSentMessage,
 });
 
 const mapDispatchToProps = {

@@ -150,7 +150,7 @@ class Messages extends Component<MessagesProps, MessagesState> {
 }
 
 const mapStateToProps = (state: RootState) => ({
-  messages: state.messages,
+  messages: state.msg.messages,
   timeFilterVisible: state.timeFilterVisible,
   timeWindowHours: selectEffectiveTimeWindow(state),
 });

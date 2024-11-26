@@ -15,12 +15,17 @@ export interface AuthState {
   username: string | null;
 }
 
-export interface AppState {
+export interface MessagesState {
+  chatId: string;
   messages: IMessage[];
   lastSentMessage: string;
+}
+
+export interface AppState {
+  auth: AuthState;
   wsConnected: boolean;
+  msg: MessagesState;
   menuOpen: boolean;
   timeFilterVisible: boolean;
   timeWindowHours: number | null;
-  auth: AuthState;
 }
