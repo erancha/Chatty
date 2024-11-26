@@ -82,7 +82,6 @@
   margin: 3rem auto;
   max-width: 40%;
   text-align: left;
-  margin-top: 5rem;
 }
 
 .app-overview ul {
@@ -91,18 +90,12 @@
   margin: 0 auto;
 }
 
-.app-overview img {
-  max-width: 60%;
-  height: auto;
-  margin: 2rem;
-}
-
 .app-overview .link-container {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 20px;
-  margin-top: 2rem;
+  margin: 1rem 0.5rem;
 }
 
 .app-overview .link-container a {
@@ -114,6 +107,12 @@
 
 .app-overview .link-container a:hover {
   border-bottom: 3px solid;
+}
+
+.app-overview img {
+  max-width: 45%;
+  height: auto;
+  margin: 0.5rem;
 }
 
 .sub-container {
@@ -315,7 +314,7 @@
   }
 
   .app-overview .header2 {
-    margin: 4rem 0.5rem 1rem 0.5rem;
+    margin: 2rem 0.5rem 1rem 0.5rem;
     max-width: 80%;
   }
 }
