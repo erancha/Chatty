@@ -51,14 +51,9 @@ return {userName, connectionIds}
         await sqsClient.send(new SendMessageCommand(sqsParams));
       }
     } catch (error) {
-      console.error(error);
+      console.error(`Error sending SQS for connectionId ${connectionId}:`, error);
     }
   }
 
-  try {
-    return { statusCode: 200 };
-  } catch (error) {
-    console.error('Error sending a message:', error);
-    return { statusCode: 500, body: JSON.stringify({ error: 'Internal Server Error' }) };
-  }
+  return { statusCode: 200 };
 };

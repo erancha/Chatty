@@ -91,8 +91,6 @@ export const App = () => {
   // render
   return auth.isLoading ? (
     <LoadingSpinner />
-  ) : auth.error ? (
-    <div>Encountering error... {auth.error.message}</div>
   ) : (
     <Provider store={store}>
       <ConnectedApp auth={auth} />

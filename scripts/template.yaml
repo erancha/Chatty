@@ -235,10 +235,12 @@ Resources:
       Layers:
         - !Ref jsonwebtokenLayer
         - !Ref IoredisLayer
+        - !Ref AwsSdkV3Layer
       Environment:
         Variables:
           ELASTICACHE_REDIS_ADDRESS: !Ref ExistingElasticacheRedisClusterAddress
           STACK_NAME: !Ref AWS::StackName
+          SQS_QUEUE_URL: !Ref MessagesToWebsocketsQueue
       VpcConfig:
         SubnetIds:
           - !Ref ExistingPrivateSubnetId

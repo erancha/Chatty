@@ -10,7 +10,7 @@ try {
         $stackName = $appName
     }
     else {
-        $stackName = "${appName}-f1"
+        $stackName = "${appName}-f2"
     }
 
     $appFolder = "$PSScriptRoot/../.."

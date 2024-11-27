@@ -60,6 +60,7 @@ if (-Not (Test-Path $commonConstants.configFilePath)) {
     $existing_config.WEBSOCKET_API_URL = $websocket_api_url
     $existing_config.COGNITO.redirectSignIn = $redirect_sign_in
     $existing_config.COGNITO.redirectSignOut = $redirect_sign_out
+    $existing_config.COGNITO.userPoolWebClientId = $cognito_user_pool_client_id
 
     # Convert the updated config back to JSON and save it
     $updated_config = $existing_config | ConvertTo-Json -Depth 10

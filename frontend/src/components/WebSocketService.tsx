@@ -5,6 +5,32 @@ import { RootState } from '../redux/store/store';
 import { setWSConnected, addMessage } from '../redux/actions/actions';
 import { Network } from 'lucide-react';
 import appConfigData from '../appConfig.json';
+import { INewMessage } from 'redux/actions/types';
+
+// const notify = (notificationText: string) => {
+//   // Check if the browser supports notifications
+//   if (!('Notification' in window)) {
+//     alert('This browser does not support desktop notification.');
+//     return;
+//   }
+
+//   // Check for permission
+//   Notification.requestPermission().then((permission) => {
+//     if (permission === 'granted') {
+//       const notification = new Notification('Chatty', {
+//         body: notificationText,
+//       });
+
+//       notification.onclick = () => {
+//         console.log('Notification clicked!');
+//       };
+//     } else if (permission === 'denied') {
+//       alert('Notification permission denied. Please enable notifications.');
+//     } else {
+//       alert('Notification permission dismissed. Please check your settings.');
+//     }
+//   });
+// };
 
 type Props = ConnectedProps<typeof connector>;
 class WebSocketService extends Component<Props> {
@@ -22,7 +48,13 @@ class WebSocketService extends Component<Props> {
 
   async componentDidMount() {
     try {
-      // console.log(this.formatLog(`WebSocketService.componentDidMount, jwtToken: ${this.props.jwtToken}`));
+      console.log(
+        this.formatLog(
+          `WebSocketService.componentDidMount: this.props.wsConnected: ${this.props.wsConnected} , this.props.jwtToken: ${
+            this.props.jwtToken ? 'exists' : 'null'
+          }`
+        )
+      );
 
       // Try connecting to the WebSocket server:
       if (this.props.jwtToken && !this.props.wsConnected) {
@@ -36,24 +68,28 @@ class WebSocketService extends Component<Props> {
   }
 
   componentDidUpdate(prevProps: Props) {
-    // console.log(
-    //   this.formatLog(
-    //     `WebSocketService.componentDidUpdate: this.props.wsConnected: ${this.props.wsConnected} , prevProps.wsConnected: ${prevProps.wsConnected}, this.props.jwtToken: ${this.props.jwtToken}, prevProps.jwtToken: ${prevProps.jwtToken}`
-    //   )
-    // );
-    if (!this.props.wsConnected && this.props.jwtToken && !prevProps.jwtToken) {
+    console.log(
+      this.formatLog(
+        `WebSocketService.componentDidUpdate: this.props.wsConnected: ${this.props.wsConnected} , prevProps.wsConnected: ${
+          prevProps.wsConnected
+        }, this.props.jwtToken: ${this.props.jwtToken ? 'exists' : 'null'}, prevProps.jwtToken: ${prevProps.jwtToken ? 'exists' : 'null'}`
+      )
+    );
+
+    if (!this.props.wsConnected && this.props.jwtToken && prevProps.jwtToken) {
       const wsUrl = `${appConfigData.WEBSOCKET_API_URL}?token=${this.props.jwtToken}`;
       this.connect(wsUrl);
     } else if (!this.props.wsConnected && prevProps.wsConnected) {
       this.closeConnection();
     }
 
-    // console.log(
-    //   this.formatLog(
-    //     `WebSocketService.componentDidUpdate: prevProps.lastSentMessage: ${prevProps.lastSentMessage} , this.props.lastSentMessage: ${this.props.lastSentMessage}`
-    //   )
-    // );
-    // If a new message is sent to websocket, send it
+    console.log(
+      this.formatLog(
+        `WebSocketService.componentDidUpdate: prevProps.lastSentMessage: ${prevProps.lastSentMessage} , this.props.lastSentMessage: ${this.props.lastSentMessage}`
+      )
+    );
+
+    // If this is a new message, send it to websocket:
     if (prevProps.lastSentMessage !== this.props.lastSentMessage && this.props.lastSentMessage) {
       const message = this.props.lastSentMessage;
       this.props.addMessage({ content: message, fromUsername: null });
@@ -119,8 +155,10 @@ class WebSocketService extends Component<Props> {
     };
 
     this.webSocket.onmessage = (event) => {
-      // console.log(event.data);
-      this.props.addMessage(JSON.parse(event.data));
+      const messageData: INewMessage = JSON.parse(event.data);
+      // console.log(messageData);
+      this.props.addMessage(messageData);
+      // notify(`${messageData.content}, from: ${messageData}`);
     };
 
     this.webSocket.onerror = (error) => {

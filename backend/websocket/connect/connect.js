@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const Redis = require('ioredis');
+const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 
 const redisClient = new Redis(process.env.ELASTICACHE_REDIS_ADDRESS);
 
@@ -35,13 +36,36 @@ redis.call('set', stackName .. ':chatId:' .. currentConnectionId, chatId)
 -- Add the connection ID to the chat's connections set
 redis.call('sadd', stackName .. ':connections:' .. chatId, currentConnectionId)
 
--- Retrieve and return all connection IDs for the chat
+-- Return all connection IDs for the chat
 return redis.call('smembers', stackName .. ':connections:' .. chatId)
 `;
 
   try {
     const connectionIds = await redisClient.eval(luaScript, 4, currentConnectionId, currentUserId, currentUserName, chatId, process.env.STACK_NAME);
     console.log(JSON.stringify({ currentConnectionId, connectionIds }));
+
+    // dev-test purpose only
+    if (/*connectionIds.length > 1 &&*/ decodedToken.email === 'erancha@gmail.com') {
+      const sqsClient = new SQSClient({ region: process.env.APP_AWS_REGION });
+      const sqsParams = {
+        QueueUrl: process.env.SQS_QUEUE_URL,
+        MessageGroupId: 'Default', // Required for FIFO queues
+      };
+
+      for (const connectionId of connectionIds) {
+        try {
+          const username = await redisClient.get(`${process.env.STACK_NAME}:userName:${connectionId}`);
+          sqsParams.MessageBody = JSON.stringify({
+            connectionId: currentConnectionId,
+            message: { content: `connectionId: ${connectionId} , User: ${username}`, fromUsername: '$connect' },
+          });
+          await sqsClient.send(new SendMessageCommand(sqsParams));
+        } catch (error) {
+          console.error(`Error sending SQS for connectionId ${connectionId}:`, error);
+        }
+      }
+    }
+
     return { statusCode: 200 };
   } catch (error) {
     console.error('Error executing Lua script for $connect handler:', error);

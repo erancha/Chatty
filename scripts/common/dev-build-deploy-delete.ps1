@@ -1,6 +1,7 @@
 param (
     [bool]$skipBuild,
-    [bool]$deleteStack
+    [bool]$deleteStack,
+    [bool]$deployFrontend
 )
 
 $scriptName = Split-Path -Leaf $PSCommandPath
@@ -48,6 +49,10 @@ if ($deleteStack) {
 }
 
 ./list-all-non-default-resources.ps1 -region $commonConstants.region | Select-String "$($commonConstants.stackName)"
+
+if ($deployFrontend) {
+    ./deploy-frontend-distribution.ps1
+}
 
 $formattedElapsedTime = Get-ElapsedTimeFormatted -startTime $startTime
 Write-Host "`n$(Get-Date -Format 'HH:mm:ss'), elapsed $formattedElapsedTime : Completed $scriptName." -ForegroundColor Blue
