@@ -14,7 +14,7 @@ exports.handler = async (event) => {
         const parsedRecord = JSON.parse(record.body);
         const connectionId = parsedRecord.connectionId;
         try {
-          console.log(`Sending a message on connection: ${connectionId} : ${JSON.stringify(parsedRecord, null, 2)}`);
+          console.log(`Sending a message on connection: '${connectionId}' : ${JSON.stringify(parsedRecord, null, 2)}`);
           await appGatewayClient.send(
             new PostToConnectionCommand({
               ConnectionId: connectionId,

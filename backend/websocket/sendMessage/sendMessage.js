@@ -15,12 +15,12 @@ local stackName = ARGV[1]
 local senderConnectionId = ARGV[2]
 
 -- Retrieve the userId, userName and chatId of senderConnectionId:
-local userId   = redis.call('GET', stackName .. ':userId:' .. senderConnectionId)
-local userName = redis.call('GET', stackName .. ':userName:' .. senderConnectionId)
-local chatId   = redis.call('GET', stackName .. ':chatId:' .. senderConnectionId)
+local userId   = redis.call('GET', stackName .. ':userId(' .. senderConnectionId .. ')')
+local userName = redis.call('GET', stackName .. ':userName(' .. senderConnectionId .. ')')
+local chatId   = redis.call('GET', stackName .. ':chatId(' .. senderConnectionId .. ')')
 
 -- Return the updated chat's connections set:
-local connectionIds = redis.call('SMEMBERS', stackName .. ':connections:' .. chatId)
+local connectionIds = redis.call('SMEMBERS', stackName .. ':connections(' .. chatId .. ')')
 return {userName, connectionIds}
 `;
 
@@ -51,7 +51,7 @@ return {userName, connectionIds}
         await sqsClient.send(new SendMessageCommand(sqsParams));
       }
     } catch (error) {
-      console.error(`Error sending SQS for connectionId ${connectionId}:`, error);
+      console.error(`Error sending SQS for connectionId '${connectionId}':`, error);
     }
   }
 

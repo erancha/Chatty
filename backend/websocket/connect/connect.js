@@ -10,6 +10,10 @@ exports.handler = async (event) => {
   if (event.queryStringParameters && event.queryStringParameters.token) {
     token = event.queryStringParameters.token;
     chatId = event.queryStringParameters.chatId;
+    if (!chatId)
+      console.warn(
+        `'chatId' not found in the query string: ${JSON.stringify(event, null, 2)} , decoded token: ${JSON.stringify(jwt.decode(token), null, 2)}`
+      );
   } else throw new Error('JWT token is missing in the query string');
   const decodedToken = jwt.decode(token);
   if (!decodedToken || !decodedToken.sub) throw new Error('Invalid token: Missing user id (sub)');
@@ -29,23 +33,24 @@ local chatId = KEYS[4]
 local stackName = ARGV[1]
 
 -- Store the user ID, user name and chat Id for the connection ID:
-redis.call('set', stackName .. ':userId:' .. currentConnectionId, currentUserId)
-redis.call('set', stackName .. ':userName:' .. currentConnectionId, currentUserName)
-redis.call('set', stackName .. ':chatId:' .. currentConnectionId, chatId)
+redis.call('set', stackName .. ':userId(' .. currentConnectionId .. ')', currentUserId)
+redis.call('set', stackName .. ':userName(' .. currentConnectionId .. ')', currentUserName)
+redis.call('set', stackName .. ':chatId(' .. currentConnectionId .. ')', chatId)
 
 -- Add the connection ID to the chat's connections set
-redis.call('sadd', stackName .. ':connections:' .. chatId, currentConnectionId)
+redis.call('sadd', stackName .. ':connections(' .. chatId .. ')', currentConnectionId)
 
 -- Return all connection IDs for the chat
-return redis.call('smembers', stackName .. ':connections:' .. chatId)
+return redis.call('smembers', stackName .. ':connections(' .. chatId .. ')')
 `;
 
   try {
-    const connectionIds = await redisClient.eval(luaScript, 4, currentConnectionId, currentUserId, currentUserName, chatId, process.env.STACK_NAME);
+    const stackName = process.env.STACK_NAME;
+    const connectionIds = await redisClient.eval(luaScript, 4, currentConnectionId, currentUserId, currentUserName, chatId, stackName);
     console.log(JSON.stringify({ currentConnectionId, connectionIds }));
 
     // dev-test purpose only
-    if (/*connectionIds.length > 1 &&*/ decodedToken.email === 'erancha@gmail.com') {
+    if (/*connectionIds.length > 1 &&*/ decodedToken.sub === '23743842-4061-709b-44f8-4ef9a527509d') {
       const sqsClient = new SQSClient({ region: process.env.APP_AWS_REGION });
       const sqsParams = {
         QueueUrl: process.env.SQS_QUEUE_URL,
@@ -54,14 +59,14 @@ return redis.call('smembers', stackName .. ':connections:' .. chatId)
 
       for (const connectionId of connectionIds) {
         try {
-          const username = await redisClient.get(`${process.env.STACK_NAME}:userName:${connectionId}`);
+          const username = await redisClient.get(`${stackName}:userName(${connectionId})`);
           sqsParams.MessageBody = JSON.stringify({
             connectionId: currentConnectionId,
-            message: { content: `connectionId: ${connectionId} , User: ${username}`, fromUsername: '$connect' },
+            message: { content: `connectionId: '${connectionId}' <===> User: ${username}`, fromUsername: '$connect' },
           });
           await sqsClient.send(new SendMessageCommand(sqsParams));
         } catch (error) {
-          console.error(`Error sending SQS for connectionId ${connectionId}:`, error);
+          console.error(`Error sending SQS for connectionId '${connectionId}':`, error);
         }
       }
     }
