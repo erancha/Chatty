@@ -55,12 +55,11 @@ class WebSocketService extends Component<Props> {
       //     }`
       //   )
       // );
-
       // Try connecting to the WebSocket server:
-      if (!this.props.wsConnected && this.props.jwtToken) {
-        // console.log("'this.connect()' called from 'componentDidMount()'.");
-        this.connect();
-      }
+      // if (!this.props.wsConnected && this.props.jwtToken) {
+      //   console.log(this.formatLog("'this.connect()' called from 'componentDidMount()'."));
+      //   this.connect();
+      // }
     } catch (err) {
       console.error('Error initializing WebSocket service:', err);
       this.props.setWSConnected(false);
@@ -68,16 +67,16 @@ class WebSocketService extends Component<Props> {
   }
 
   componentDidUpdate(prevProps: Props) {
-    // console.log(
-    //   this.formatLog(
-    //     `WebSocketService.componentDidUpdate: this.props.wsConnected: ${this.props.wsConnected} , prevProps.wsConnected: ${
-    //       prevProps.wsConnected
-    //     }, this.props.jwtToken: ${this.props.jwtToken ? 'exists' : 'null'}, prevProps.jwtToken: ${prevProps.jwtToken ? 'exists' : 'null'}`
-    //   )
-    // );
+    console.log(
+      this.formatLog(
+        `WebSocketService.componentDidUpdate: this.props.wsConnected: ${this.props.wsConnected} , prevProps.wsConnected: ${
+          prevProps.wsConnected
+        }, this.props.jwtToken: ${this.props.jwtToken ? 'exists' : 'null'}, prevProps.jwtToken: ${prevProps.jwtToken ? 'exists' : 'null'}`
+      )
+    );
 
-    if (!this.props.wsConnected && this.props.jwtToken && !prevProps.jwtToken) {
-      // console.log("'this.connect()' called from 'componentDidUpdate'.");
+    if (!this.props.wsConnected || this.props.jwtToken !== prevProps.jwtToken) {
+      console.log(this.formatLog("'this.connect()' called from 'componentDidUpdate'."));
       this.connect();
     } else if (!this.props.wsConnected && prevProps.wsConnected) this.closeConnection();
 
@@ -112,8 +111,6 @@ class WebSocketService extends Component<Props> {
     if (!this.props.chatId) console.error("'chatId' is mandatory in the query string");
     else {
       const url = `${appConfigData.WEBSOCKET_API_URL}?token=${this.props.jwtToken}&chatId=${this.props.chatId}`;
-
-      // console.log(this.formatLog('connect: ..'));
 
       // Reset the previous connection (if opened):
       if (this.reconnectTimeout) {
