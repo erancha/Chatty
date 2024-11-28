@@ -195,6 +195,13 @@
   gap: 0.5rem;
 }
 
+.menu-content-inner .sign-out-user-details {
+  font-size: 11px;
+  font-weight: bold;
+  align-content: center;
+  color: darkgreen;
+}
+
 .header-title {
   flex-grow: 1;
   text-align: center;

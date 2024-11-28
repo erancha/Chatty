@@ -82,9 +82,9 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
             {
               id: performance.now().toString(),
               content: action.payload.content,
-              fromUsername: action.payload.fromUsername,
+              sender: action.payload.sender,
               timestamp: Date.now(),
-              viewed: action.payload.fromUsername === null,
+              viewed: action.payload.sender === null,
             },
             ...state.msg.messages, // Access the messages from the new nested structure
           ],

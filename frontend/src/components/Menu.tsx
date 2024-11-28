@@ -52,6 +52,11 @@ class ReduxConnectedMenu extends React.Component<MenuProps & { auth: AuthContext
         </DropdownMenuTrigger>
         <DropdownMenuContent className='menu-content'>
           <div className='menu-content-inner'>
+            {this.props.isAuthenticated && (
+              <p className='sign-out-user-details'>
+                {this.props.auth.user?.profile.name} : {this.props.auth.user?.profile.email}
+              </p>
+            )}
             <div>
               {!this.props.isAuthenticated ? (
                 <DropdownMenuItem className='menu-item'>

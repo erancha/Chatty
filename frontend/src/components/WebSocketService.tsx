@@ -89,7 +89,7 @@ class WebSocketService extends Component<Props> {
     // If this is a new message, send it to websocket:
     if (this.props.lastSentMessage && this.props.lastSentMessage !== prevProps.lastSentMessage) {
       const message = this.props.lastSentMessage;
-      this.props.addMessage({ content: message, fromUsername: null });
+      this.props.addMessage({ content: message, sender: null });
       this.webSocket?.send(
         JSON.stringify({
           action: 'SendMessage',

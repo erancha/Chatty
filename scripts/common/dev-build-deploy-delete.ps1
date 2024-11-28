@@ -48,11 +48,11 @@ if ($deleteStack) {
     aws cloudformation wait stack-delete-complete --stack-name $commonConstants.stackName --region $commonConstants.region
 }
 
-./list-all-non-default-resources.ps1 -region $commonConstants.region | Select-String "$($commonConstants.stackName)"
-
 if ($deployFrontend) {
     ./deploy-frontend-distribution.ps1
 }
+
+./list-all-non-default-resources.ps1 -region $commonConstants.region | Select-String "$($commonConstants.stackName)"
 
 $formattedElapsedTime = Get-ElapsedTimeFormatted -startTime $startTime
 Write-Host "`n$(Get-Date -Format 'HH:mm:ss'), elapsed $formattedElapsedTime : Completed $scriptName." -ForegroundColor Blue

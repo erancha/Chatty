@@ -65,6 +65,10 @@ Parameters:
   ExistingIdentityPoolId:
     Description: 'ID of an existing Cognito Identity Pool'
     Type: String
+  ExistingMessagesTableName:
+    Description: 'Name of an existing MessagesTable (leave empty to create a new one)'
+    Type: String
+    Default: ''
 
 Conditions:
   HasCustomDomainName: !Not [!Equals [!Ref CustomDomainName, '']]
@@ -74,6 +78,7 @@ Conditions:
     - !Condition HasCertificateArn
   AllowS3PublicAccess: !Equals [!Ref S3PublicAccess, 'true']
   AllowOnlyCloudfrontOriginCondition: !Equals [!Ref AllowOnlyCloudfrontOrigin, 'true']
+  CreateMessagesTable: !Equals [!Ref ExistingMessagesTableName, '']
 
 Resources:
   # Cognito User Pool Client
@@ -267,11 +272,11 @@ Resources:
           - !Ref WebSocketLambdaSG
       Role: !GetAtt WebSocketLambdaRole.Arn
 
-  SendMessageFunction: # custom function to send a message to one or more active websocket connections
+  ReceiveMessageOnWebsocketFunction: # custom function to handle messages sent from a client
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../backend/websocket/sendMessage/
-      Handler: sendMessage.handler
+      CodeUri: ../backend/websocket/messages/
+      Handler: receiveMessageOnWebsocket.handler
       Runtime: nodejs20.x
       Layers:
         - !Ref IoredisLayer
@@ -390,13 +395,13 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DisconnectFunction.Arn}/invocations
 
-  SendMessageIntegration:
+  ReceiveMessageOnWebsocketIntegration:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
       ApiId: !Ref WebSocketApi
-      Description: SendMessage Integration
+      Description: ReceiveMessageOnWebsocket Function Integration
       IntegrationType: AWS_PROXY
-      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SendMessageFunction.Arn}/invocations
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ReceiveMessageOnWebsocketFunction.Arn}/invocations
 
   ConnectRoute:
     Type: AWS::ApiGatewayV2::Route
@@ -420,7 +425,7 @@ Resources:
         - - 'integrations'
           - !Ref DisconnectIntegration
 
-  SendMessageRoute:
+  ReceiveMessageOnWebsocketRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref WebSocketApi
@@ -429,7 +434,7 @@ Resources:
       Target: !Join
         - '/'
         - - 'integrations'
-          - !Ref SendMessageIntegration
+          - !Ref ReceiveMessageOnWebsocketIntegration
 
   WebSocketDeployment:
     Type: AWS::ApiGatewayV2::Deployment
@@ -479,11 +484,11 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*/$disconnect'
 
-  SendMessagePermission:
+  ReceiveMessageOnWebsocketPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Ref SendMessageFunction
+      FunctionName: !Ref ReceiveMessageOnWebsocketFunction
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*/SendMessage'
 
@@ -497,18 +502,19 @@ Resources:
       FifoQueue: true
       ContentBasedDeduplication: true
 
-  ExtractMessagesFunction:
+  SendMessageToWebsocketsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: extractMessages.handler
+      Handler: sendMessageToWebsockets.handler
       Runtime: nodejs20.x
-      CodeUri: ../backend/websocket/extractMessages/
+      CodeUri: ../backend/websocket/messages/
       Layers:
         - !Ref AwsSdkV3Layer
       Environment:
         Variables:
           WEBSOCKET_API_URL: !Sub 'wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}'
-      Role: !GetAtt ExtractMessagesLambdaExecutionRole.Arn
+          MESSAGES_TABLE_NAME: !If [CreateMessagesTable, !Ref MessagesTable, !Ref ExistingMessagesTableName]
+      Role: !GetAtt SendMessageToWebsocketsLambdaExecutionRole.Arn
       Events: # event source mapping
         SQSTrigger:
           Type: SQS
@@ -517,7 +523,7 @@ Resources:
             BatchSize: 10
             Enabled: true
 
-  ExtractMessagesLambdaExecutionRole:
+  SendMessageToWebsocketsLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -547,6 +553,53 @@ Resources:
               - Effect: Allow
                 Action: 'execute-api:ManageConnections'
                 Resource: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*'
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource:
+                  - !If
+                    - CreateMessagesTable
+                    - !GetAtt MessagesTable.Arn
+                    - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ExistingMessagesTableName}'
+                  - !If
+                    - CreateMessagesTable
+                    - !Sub '${MessagesTable.Arn}/index/UserIdUpdatedIndex'
+                    - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ExistingMessagesTableName}/index/ChatIdUpdatedIndex'
+
+  # ------------------------------------------------------------------------------
+  # DynamoDB Tables.
+  # ------------------------------------------------------------------------------
+  MessagesTable:
+    Type: AWS::DynamoDB::Table
+    Condition: CreateMessagesTable
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub ${AWS::StackName}-messages
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: chatId
+          AttributeType: S
+        - AttributeName: updatedAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ChatIdUpdatedIndex
+          KeySchema:
+            - AttributeName: chatId
+              KeyType: HASH
+            - AttributeName: updatedAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
 
 Outputs:
   S3BucketName:

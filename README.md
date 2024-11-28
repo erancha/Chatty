@@ -6,7 +6,7 @@ AWS/React/WebSockets-based chat application.
 
 ## 2. Architecture Components
 
-![Architecture diagram](https://lucid.app/publicSegments/view/8300a408-ca51-45e6-b6f7-2229ab1cc855/image.jpeg)
+![Architecture diagram](https://lucid.app/publicSegments/view/82f588b6-80d9-4c6a-a32c-ef1095079703/image.jpeg)
 
 ### 2.1 Backend
 

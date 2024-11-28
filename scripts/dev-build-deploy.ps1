@@ -58,6 +58,7 @@ try {
                 "ExistingElasticacheRedisClusterAddress='en-elasticache-redis-cluster.hz2zez.0001.euc1.cache.amazonaws.com:6379'",
                 "ExistingVpcId='vpc-08016eb77e7ac9962'",
                 "ExistingPrivateSubnetId='subnet-00a1db5158e0a7992'"
+                # "ExistingMessagesTableName='msg-messages'"
 
                 $formattedElapsedTime = Get-ElapsedTimeFormatted -startTime $startTime
                 Write-Host "`n$(Get-Date -Format 'HH:mm:ss'), elapsed $formattedElapsedTime : Remember to add/remove !!!!!!!!!!!SG as an inbound rule to !!!!!MyElasticacheRedisSG !" -BackgroundColor DarkMagenta

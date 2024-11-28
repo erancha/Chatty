@@ -116,9 +116,9 @@ class Messages extends Component<MessagesProps, MessagesState> {
           {filteredMessages.map((msg) => (
             <div
               key={msg.id}
-              className={`message-bubble ${msg.fromUsername === null ? 'local' : 'others'} ${msg.viewed ? 'viewed' : 'unviewed'}`}
+              className={`message-bubble ${msg.sender === null ? 'local' : 'others'} ${msg.viewed ? 'viewed' : 'unviewed'}`}
               onClick={() => this.handleMessageClick(msg.id)}>
-              <div className='message-sender'>{msg.fromUsername}</div>
+              <div className='message-sender'>{msg.sender}</div>
               <div className='message-content'>{msg.content}</div>
               <div className='message-timestamp'>{new Date(msg.timestamp).toLocaleString('en-US', options)}</div>
             </div>

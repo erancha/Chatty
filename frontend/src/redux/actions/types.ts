@@ -1,6 +1,6 @@
 export interface INewMessage {
   content: string;
-  fromUsername: string | null;
+  sender: string | null;
 }
 
 export interface IMessage extends INewMessage {

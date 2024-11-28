@@ -61,8 +61,9 @@ return redis.call('smembers', stackName .. ':connections(' .. chatId .. ')')
         try {
           const username = await redisClient.get(`${stackName}:userName(${connectionId})`);
           sqsParams.MessageBody = JSON.stringify({
-            connectionId: currentConnectionId,
-            message: { content: `connectionId: '${connectionId}' <===> User: ${username}`, fromUsername: '$connect' },
+            targetConnectionIds: [currentConnectionId],
+            chatId,
+            message: { content: `connectionId: '${connectionId}' <===> User: ${username}`, sender: '$connect' },
           });
           await sqsClient.send(new SendMessageCommand(sqsParams));
         } catch (error) {
