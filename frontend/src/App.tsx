@@ -30,7 +30,9 @@ class AppComponent extends React.Component<AppProps & { auth: AuthContextProps }
             <Menu />
           </div>
           {this.props.auth.isAuthenticated && <WebSocketService />}
-          <div className='header-title'>Chatty</div>
+          <div className='header-title' title='AWS/React/WebSockets-based chat application.'>
+            Chatty
+          </div>
           <span className='build'>{appConfigData.BUILD}</span>
         </div>
         {this.props.auth.isAuthenticated ? (
