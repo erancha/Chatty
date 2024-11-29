@@ -7,7 +7,6 @@ import { RootState } from '../redux/store/store';
 import { selectEffectiveTimeWindow } from '../redux/selectors/selectors';
 import '../App.css';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { ToastContainer } from 'react-toastify';
 
 interface MessagesProps {
@@ -126,7 +125,7 @@ class Messages extends Component<MessagesProps, MessagesState> {
                 onClick={() => this.handleMessageClick(msg.id)}>
                 <div className='message-sender'>{msg.sender}</div>
                 <div className='message-content'>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
                 <div className='message-timestamp'>{new Date(msg.timestamp).toLocaleString('en-US', options)}</div>
               </div>
