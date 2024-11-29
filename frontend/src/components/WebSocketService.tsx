@@ -6,6 +6,8 @@ import { setWSConnected, loadPreviousMessages, addMessage } from '../redux/actio
 import { Network } from 'lucide-react';
 import appConfigData from '../appConfig.json';
 import { INewMessage } from 'redux/actions/types';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // const notify = (notificationText: string) => {
 //   // Check if the browser supports notifications
@@ -266,6 +268,7 @@ class WebSocketService extends Component<Props> {
         } else {
           const newMessage: INewMessage = messageData;
           this.props.addMessage(newMessage);
+          toast(`${newMessage.content} , from ${newMessage.sender}`, { autoClose: Math.max(Math.min(newMessage.content.length * 75, 4000), 2000) });
           // notify(`${messageData.content}, from: ${messageData}`);
         }
       };

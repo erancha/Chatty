@@ -7,6 +7,8 @@ import { RootState } from '../redux/store/store';
 import { selectEffectiveTimeWindow } from '../redux/selectors/selectors';
 import '../App.css';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { ToastContainer } from 'react-toastify';
 
 interface MessagesProps {
   messages: IMessage[];
@@ -93,40 +95,43 @@ class Messages extends Component<MessagesProps, MessagesState> {
     const filteredMessages = this.getFilteredMessages();
 
     return (
-      <div className='messages-container'>
-        {timeFilterVisible && (
-          <div className='time-filter-container'>
-            <div className='time-filter-title'>Time Filter:</div>
-            <input type='number' min='0' step='1' value={timeWindowHours || ''} onChange={this.handleTimeWindowChange} className='input-field' />
-            <span>hours</span>
-          </div>
-        )}
-
-        <div className='new-message-container'>
-          <textarea
-            value={newMessage}
-            onChange={(e) => this.setState({ newMessage: e.target.value })}
-            placeholder='Type a message...'
-            className='new-message-text'
-          />
-          <button onClick={this.handleSendMessage} className='send-button'>
-            <Send />
-          </button>
-        </div>
-
-        <div className='messages-list'>
-          {filteredMessages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`message-bubble ${msg.sender === null ? 'local' : 'others'} ${msg.viewed ? 'viewed' : 'unviewed'}`}
-              onClick={() => this.handleMessageClick(msg.id)}>
-              <div className='message-sender'>{msg.sender}</div>
-              <div className='message-content'>
-                <ReactMarkdown>{msg.content}</ReactMarkdown>
-              </div>
-              <div className='message-timestamp'>{new Date(msg.timestamp).toLocaleString('en-US', options)}</div>
+      <div>
+        <ToastContainer limit={1} />
+        <div className='messages-container'>
+          {timeFilterVisible && (
+            <div className='time-filter-container'>
+              <div className='time-filter-title'>Time Filter:</div>
+              <input type='number' min='0' step='1' value={timeWindowHours || ''} onChange={this.handleTimeWindowChange} className='input-field' />
+              <span>hours</span>
             </div>
-          ))}
+          )}
+
+          <div className='new-message-container'>
+            <textarea
+              value={newMessage}
+              onChange={(e) => this.setState({ newMessage: e.target.value })}
+              placeholder='Type a message...'
+              className='new-message-text'
+            />
+            <button onClick={this.handleSendMessage} className='send-button'>
+              <Send />
+            </button>
+          </div>
+
+          <div className='messages-list'>
+            {filteredMessages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`message-bubble ${msg.sender === null ? 'local' : 'others'} ${msg.viewed ? 'viewed' : 'unviewed'}`}
+                onClick={() => this.handleMessageClick(msg.id)}>
+                <div className='message-sender'>{msg.sender}</div>
+                <div className='message-content'>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                </div>
+                <div className='message-timestamp'>{new Date(msg.timestamp).toLocaleString('en-US', options)}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
