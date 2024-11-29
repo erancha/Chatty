@@ -1,1 +1,1 @@
-return "msg"
+return "cht"

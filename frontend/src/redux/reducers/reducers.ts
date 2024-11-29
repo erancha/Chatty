@@ -1,6 +1,7 @@
 import {
   TOGGLE_OVERVIEW,
   TOGGLE_MENU,
+  LOAD_PREVIOUS_MESSAGES,
   ADD_MESSAGE,
   SEND_MESSAGE,
   SET_WS_CONNECTED,
@@ -9,6 +10,7 @@ import {
   SET_TIME_WINDOW,
   IToggleOverview,
   IToggleMenu,
+  ILoadPreviousMessages,
   IAddMessage,
   ISendMessage,
   ISetWSConnected,
@@ -23,6 +25,7 @@ import initialState from '../initialState';
 type AppAction =
   | IToggleOverview
   | IToggleMenu
+  | ILoadPreviousMessages
   | IAddMessage
   | ISendMessage
   | ISetWSConnected
@@ -65,6 +68,17 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
     case SET_TIME_WINDOW:
       return { ...state, timeWindowHours: action.payload };
 
+    case LOAD_PREVIOUS_MESSAGES:
+      return {
+        ...state,
+        msg: {
+          ...state.msg,
+          messages: [
+            ...action.payload,
+            ...state.msg.messages, // Access the messages from the new nested structure
+          ],
+        },
+      };
     case SEND_MESSAGE:
       return {
         ...state,

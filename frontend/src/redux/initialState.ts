@@ -1,6 +1,5 @@
 import { AppState } from './actions/types';
 import { DEFAULT_TIME_WINDOW_HOURS } from './constants';
-import { loadMessagesFromStorage } from './middleware/localStorage';
 
 const initialState: AppState = {
   showOverview: false,
@@ -12,7 +11,7 @@ const initialState: AppState = {
   wsConnected: false,
   msg: {
     chatId: 'global', //TODO: Implement private and group chats.
-    messages: loadMessagesFromStorage(),
+    messages: [],
     lastSentMessage: '',
   },
   menuOpen: false,

@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const Redis = require('ioredis');
 const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 
 const redisClient = new Redis(process.env.ELASTICACHE_REDIS_ADDRESS);
 
@@ -45,18 +47,27 @@ return redis.call('smembers', stackName .. ':connections(' .. chatId .. ')')
 `;
 
   try {
+    // Refer to the comments inside the lua script:
     const stackName = process.env.STACK_NAME;
     const connectionIds = await redisClient.eval(luaScript, 4, currentConnectionId, currentUserId, currentUserName, chatId, stackName);
     console.log(JSON.stringify({ currentConnectionId, connectionIds }));
 
+    // Load and send to the client previous chat messages from DynamoDB:
+    const sqsClient = new SQSClient({ region: process.env.APP_AWS_REGION });
+    const sqsParams = {
+      QueueUrl: process.env.SQS_QUEUE_URL,
+      MessageGroupId: 'Default', // Required for FIFO queues
+    };
+    sqsParams.MessageBody = JSON.stringify({
+      targetConnectionIds: [currentConnectionId],
+      chatId,
+      message: { previousMessages: await loadPreviousMessages(chatId) },
+      skipSavingToDB: true,
+    });
+    await sqsClient.send(new SendMessageCommand(sqsParams));
+
     // dev-test purpose only
     if (/*connectionIds.length > 1 &&*/ decodedToken.sub === '23743842-4061-709b-44f8-4ef9a527509d') {
-      const sqsClient = new SQSClient({ region: process.env.APP_AWS_REGION });
-      const sqsParams = {
-        QueueUrl: process.env.SQS_QUEUE_URL,
-        MessageGroupId: 'Default', // Required for FIFO queues
-      };
-
       for (const connectionId of connectionIds) {
         try {
           const username = await redisClient.get(`${stackName}:userName(${connectionId})`);
@@ -64,6 +75,7 @@ return redis.call('smembers', stackName .. ':connections(' .. chatId .. ')')
             targetConnectionIds: [currentConnectionId],
             chatId,
             message: { content: `connectionId: '${connectionId}' <===> User: ${username}`, sender: '$connect' },
+            skipSavingToDB: true,
           });
           await sqsClient.send(new SendMessageCommand(sqsParams));
         } catch (error) {
@@ -78,3 +90,31 @@ return redis.call('smembers', stackName .. ':connections(' .. chatId .. ')')
     return { statusCode: 500, body: JSON.stringify({ error: 'Internal Server Error' }) };
   }
 };
+
+const dynamodbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+
+// Load previous chat messages from DynamoDB:
+async function loadPreviousMessages(currentChatId) {
+  const result = await dynamodbDocClient.send(
+    new QueryCommand({
+      TableName: process.env.MESSAGES_TABLE_NAME,
+      IndexName: 'ChatIdUpdatedIndex',
+      KeyConditionExpression: 'chatId = :chatId',
+      ExpressionAttributeValues: { ':chatId': currentChatId },
+      Select: 'ALL_ATTRIBUTES',
+      ScanIndexForward: false,
+      Limit: 50, //TODO: Handle pagination.
+    })
+  );
+  const messages = await result.Items.map((item) => {
+    return {
+      id: item.id,
+      timestamp: new Date(item.updatedAt).getTime(),
+      content: item.content,
+      sender: item.sender,
+      viewed: true,
+    };
+  });
+
+  return messages;
+}

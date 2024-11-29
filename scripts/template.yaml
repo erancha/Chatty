@@ -245,6 +245,7 @@ Resources:
         Variables:
           ELASTICACHE_REDIS_ADDRESS: !Ref ExistingElasticacheRedisClusterAddress
           STACK_NAME: !Ref AWS::StackName
+          MESSAGES_TABLE_NAME: !If [CreateMessagesTable, !Ref MessagesTable, !Ref ExistingMessagesTableName]
           SQS_QUEUE_URL: !Ref MessagesToWebsocketsQueue
       VpcConfig:
         SubnetIds:
@@ -323,17 +324,6 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
       Policies:
-        # - PolicyName: CloudWatchLogs
-        #   PolicyDocument:
-        #     Version: '2012-10-17'
-        #     Statement:
-        #       - Effect: Allow
-        #         Action:
-        #           - 'logs:CreateLogGroup'
-        #           - 'logs:CreateLogStream'
-        #           - 'logs:PutLogEvents'
-        #         Resource:
-        #           - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*'
         - PolicyName: ElastiCacheAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -361,6 +351,22 @@ Resources:
                 Action:
                   - sqs:SendMessage
                 Resource: !GetAtt MessagesToWebsocketsQueue.Arn
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                Resource:
+                  - !If
+                    - CreateMessagesTable
+                    - !GetAtt MessagesTable.Arn
+                    - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ExistingMessagesTableName}'
+                  - !If
+                    - CreateMessagesTable
+                    - !Sub '${MessagesTable.Arn}/index/ChatIdUpdatedIndex'
+                    - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ExistingMessagesTableName}/index/ChatIdUpdatedIndex'
 
   # CORS in AWS::ApiGatewayV2::Api (WebSocket APIs)
   # WebSocket APIs (defined with AWS::ApiGatewayV2::Api) do not directly utilize CORS in the same manner as REST APIs. This is because WebSocket communication is fundamentally different from HTTP communication.

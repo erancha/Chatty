@@ -6,6 +6,7 @@ import { markMessageViewed, setTimeWindow, sendMessage } from '../redux/actions/
 import { RootState } from '../redux/store/store';
 import { selectEffectiveTimeWindow } from '../redux/selectors/selectors';
 import '../App.css';
+import ReactMarkdown from 'react-markdown';
 
 interface MessagesProps {
   messages: IMessage[];
@@ -112,6 +113,7 @@ class Messages extends Component<MessagesProps, MessagesState> {
             <Send />
           </button>
         </div>
+
         <div className='messages-list'>
           {filteredMessages.map((msg) => (
             <div
@@ -119,7 +121,9 @@ class Messages extends Component<MessagesProps, MessagesState> {
               className={`message-bubble ${msg.sender === null ? 'local' : 'others'} ${msg.viewed ? 'viewed' : 'unviewed'}`}
               onClick={() => this.handleMessageClick(msg.id)}>
               <div className='message-sender'>{msg.sender}</div>
-              <div className='message-content'>{msg.content}</div>
+              <div className='message-content'>
+                <ReactMarkdown>{msg.content}</ReactMarkdown>
+              </div>
               <div className='message-timestamp'>{new Date(msg.timestamp).toLocaleString('en-US', options)}</div>
             </div>
           ))}

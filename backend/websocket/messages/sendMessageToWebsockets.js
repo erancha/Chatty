@@ -44,19 +44,20 @@ exports.handler = async (event) => {
         }
 
         // Write each message to a dynamo db table:
-        const messageId = crypto.randomUUID();
-        const currentTimestamp = new Date().toISOString();
-        await docClient.send(
-          new PutCommand({
-            TableName: process.env.MESSAGES_TABLE_NAME,
-            Item: {
-              id: messageId,
-              chatId: extractedRecord.chatId,
-              updatedAt: currentTimestamp,
-              ...extractedRecord.message,
-            },
-          })
-        );
+        if (!extractedRecord.skipSavingToDB) {
+          //TODO: This functionality is planned to be isolated to another lambda function, which will subscribe to a new SNS topic (refer to the readme.md file).
+          await docClient.send(
+            new PutCommand({
+              TableName: process.env.MESSAGES_TABLE_NAME,
+              Item: {
+                id: crypto.randomUUID(),
+                chatId: extractedRecord.chatId,
+                updatedAt: new Date().toISOString(),
+                ...extractedRecord.message,
+              },
+            })
+          );
+        }
       })
     );
   } catch (error) {

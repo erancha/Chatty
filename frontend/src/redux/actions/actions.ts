@@ -1,11 +1,12 @@
 import { Dispatch } from 'redux';
-import { INewMessage } from './types';
+import { INewMessage, IMessage } from './types';
 
 export const TOGGLE_OVERVIEW = 'TOGGLE_OVERVIEW'; // show or hide the overview.
 export const TOGGLE_MENU = 'TOGGLE_MENU'; // open or close the menu.
 export const SET_WS_CONNECTED = 'SET_WS_CONNECTED'; // save the websocket connection state.
 export const TOGGLE_TIME_FILTER = 'TOGGLE_TIME_FILTER'; // show or hide the time filter.
 export const SET_TIME_WINDOW = 'SET_TIME_WINDOW'; // set the time window value in the state.
+export const LOAD_PREVIOUS_MESSAGES = 'LOAD_PREVIOUS_MESSAGES'; // load previous messages into the store
 export const SEND_MESSAGE = 'SEND_MESSAGE'; // send message to other user(s).
 export const ADD_MESSAGE = 'ADD_MESSAGE'; // add message to the current messages view.
 export const MARK_MESSAGE_VIEWED = 'MARK_MESSAGE_VIEWED'; // mark a message as viewed.
@@ -63,6 +64,17 @@ export interface ISetTimeWindow {
 export const setTimeWindow = (minutes: number | null): ISetTimeWindow => ({
   type: SET_TIME_WINDOW,
   payload: minutes,
+});
+
+// add previous messages to the current messages view.
+export interface ILoadPreviousMessages {
+  type: typeof LOAD_PREVIOUS_MESSAGES;
+  payload: IMessage[];
+}
+
+export const loadPreviousMessages = (messages: IMessage[]): ILoadPreviousMessages => ({
+  type: LOAD_PREVIOUS_MESSAGES,
+  payload: messages,
 });
 
 // send message to other user(s).
