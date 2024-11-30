@@ -61,7 +61,7 @@ return redis.call('smembers', stackName .. ':connections(' .. chatId .. ')')
     sqsParams.MessageBody = JSON.stringify({
       targetConnectionIds: [currentConnectionId],
       chatId,
-      message: { previousMessages: await loadPreviousMessages(chatId) },
+      message: { previousMessages: await loadPreviousMessages(chatId, currentUserName) },
       skipSavingToDB: true,
     });
     await sqsClient.send(new SendMessageCommand(sqsParams));
@@ -101,7 +101,7 @@ return redis.call('smembers', stackName .. ':connections(' .. chatId .. ')')
 const dynamodbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 // Load previous chat messages from DynamoDB:
-async function loadPreviousMessages(currentChatId) {
+async function loadPreviousMessages(currentChatId, currentUserName) {
   const result = await dynamodbDocClient.send(
     new QueryCommand({
       TableName: process.env.MESSAGES_TABLE_NAME,
@@ -118,7 +118,7 @@ async function loadPreviousMessages(currentChatId) {
       id: item.id,
       timestamp: new Date(item.updatedAt).getTime(),
       content: item.content,
-      sender: item.sender,
+      sender: item.sender !== currentUserName ? item.sender : null,
       viewed: true,
     };
   });

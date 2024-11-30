@@ -125,7 +125,9 @@ class Messages extends Component<MessagesProps, MessagesState> {
                 key={msg.id}
                 className={`message-bubble ${msg.sender === null ? 'local' : 'others'} ${msg.viewed ? 'viewed' : 'unviewed'}`}
                 onClick={() => this.handleMessageClick(msg.id)}>
-                <div className='message-sender'>{msg.sender}</div>
+                <div className='message-sender' style={{ color: selectColor(msg.sender) }}>
+                  {msg.sender}
+                </div>
                 <div className='message-content'>
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
@@ -138,6 +140,36 @@ class Messages extends Component<MessagesProps, MessagesState> {
     );
   }
 }
+
+// Function to select color based on sender, dynamically generating for new senders
+const selectColor = (sender: string | null) => {
+  if (!sender) return '#000000'; // Default to black if sender is null
+
+  // A fixed list of distinct colors
+  const colors = [
+    '#FF5733', // Red
+    '#3357FF', // Blue
+    '#F1C40F', // Yellow
+    '#8E44AD', // Purple
+    '#E67E22', // Orange
+    '#2ECC71', // Emerald
+    '#3498DB', // Peter River
+    '#9B59B6', // Amethyst
+    '#E74C3C', // Alizarin
+    '#1ABC9C', // Turquoise
+  ];
+
+  // Create a hash based on the string
+  let hash = 0;
+  for (let i = 0; i < sender.length; i++) {
+    hash = sender.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  // Use the hash to select an index from the colors array
+  const colorIndex = Math.abs(hash % colors.length); // Ensure index is within the range of colors array
+
+  return colors[colorIndex];
+};
 
 const mapStateToProps = (state: RootState) => ({
   messages: state.msg.messages,
