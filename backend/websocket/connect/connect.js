@@ -72,7 +72,7 @@ return redis.call('smembers', stackName .. ':connections(' .. chatId .. ')')
       try {
         const username = await redisClient.get(`${stackName}:userName(${connectionId})`);
         content += `  - ${username}\t`;
-        if (decodedToken.sub === '23743842-4061-709b-44f8-4ef9a527509d') content += ` (connection id: '${connectionId}')`;
+        if (decodedToken.sub === '23743842-4061-709b-44f8-4ef9a527509d') content += ` ('${connectionId}')`;
         content += '\n';
       } catch (error) {
         console.error(`Error reading username for connection: '${connectionId}'.`, error);

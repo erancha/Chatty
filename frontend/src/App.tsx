@@ -43,7 +43,8 @@ class AppComponent extends React.Component<AppProps & { auth: AuthContextProps }
               <div className='app-overview'>
                 <hr />
                 <ul className='header2'>
-                  <li>Chatty allows authenticated users to chat, in groups or in private chats.</li>
+                  <li>Chatty allows authenticated users to chat, in a global group.</li>
+                  <li>Pending: Custom groups and private chats.</li>
                 </ul>
 
                 <div className='link-container'>
