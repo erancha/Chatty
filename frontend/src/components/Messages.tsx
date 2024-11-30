@@ -27,6 +27,8 @@ interface MessagesState {
 const options: Intl.DateTimeFormatOptions = {
   hour: 'numeric',
   minute: 'numeric',
+  day: 'numeric',
+  month: 'numeric',
   hour12: false,
 };
 
@@ -127,7 +129,7 @@ class Messages extends Component<MessagesProps, MessagesState> {
                 <div className='message-content'>
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
-                <div className='message-timestamp'>{new Date(msg.timestamp).toLocaleString('en-US', options)}</div>
+                <div className='message-timestamp'>{new Date(msg.timestamp).toLocaleString('en-GB', options)}</div>
               </div>
             ))}
           </div>
