@@ -268,7 +268,8 @@ class WebSocketService extends Component<Props> {
         } else {
           const newMessage: INewMessage = messageData;
           this.props.addMessage(newMessage);
-          toast(`${newMessage.content} , from ${newMessage.sender}`, { autoClose: Math.max(Math.min(newMessage.content.length * 75, 4000), 2000) });
+          if (newMessage.sender !== '$connect')
+            toast(`${newMessage.content} , from ${newMessage.sender}`, { autoClose: Math.max(Math.min(newMessage.content.length * 75, 4000), 2000) });
           // notify(`${messageData.content}, from: ${messageData}`);
         }
       };

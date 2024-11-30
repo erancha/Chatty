@@ -66,43 +66,29 @@ return redis.call('smembers', stackName .. ':connections(' .. chatId .. ')')
     });
     await sqsClient.send(new SendMessageCommand(sqsParams));
 
-    if (decodedToken.sub === '23743842-4061-709b-44f8-4ef9a527509d') {
-      for (const connectionId of connectionIds) {
-        try {
-          const username = await redisClient.get(`${stackName}:userName(${connectionId})`);
-          sqsParams.MessageBody = JSON.stringify({
-            targetConnectionIds: [currentConnectionId],
-            chatId,
-            message: { content: `connectionId: '${connectionId}' <===> User: ${username}`, sender: '$connect' },
-            skipSavingToDB: true,
-          });
-          await sqsClient.send(new SendMessageCommand(sqsParams));
-        } catch (error) {
-          console.error(`Error sending SQS for connectionId '${connectionId}':`, error);
-        }
-      }
-    } else {
-      let content = 'Connected users:\n';
-      for (const connectionId of connectionIds) {
-        try {
-          const username = await redisClient.get(`${stackName}:userName(${connectionId})`);
-          content += `  - ${username}\n`;
-        } catch (error) {
-          console.error(`Error reading username for connection: '${connectionId}'.`, error);
-        }
-      }
-
+    // Send a list of connected users:
+    let content = 'Connected users:\n';
+    for (const connectionId of connectionIds) {
       try {
-        sqsParams.MessageBody = JSON.stringify({
-          targetConnectionIds: [currentConnectionId],
-          chatId,
-          message: { content, sender: '$connect' },
-          skipSavingToDB: true,
-        });
-        await sqsClient.send(new SendMessageCommand(sqsParams));
+        const username = await redisClient.get(`${stackName}:userName(${connectionId})`);
+        content += `  - ${username}\t`;
+        if (decodedToken.sub === '23743842-4061-709b-44f8-4ef9a527509d') content += ` (connection id: '${connectionId}')`;
+        content += '\n';
       } catch (error) {
-        console.error(`Error sending SQS for connectionId '${currentConnectionId}'.`, error);
+        console.error(`Error reading username for connection: '${connectionId}'.`, error);
       }
+    }
+
+    try {
+      sqsParams.MessageBody = JSON.stringify({
+        targetConnectionIds: [currentConnectionId],
+        chatId,
+        message: { content, sender: '$connect' },
+        skipSavingToDB: true,
+      });
+      await sqsClient.send(new SendMessageCommand(sqsParams));
+    } catch (error) {
+      console.error(`Error inserting to SQS for connectionId: '${currentConnectionId}'.`, error);
     }
 
     return { statusCode: 200 };
