@@ -110,7 +110,7 @@ async function loadPreviousMessages(currentChatId) {
       ExpressionAttributeValues: { ':chatId': currentChatId },
       Select: 'ALL_ATTRIBUTES',
       ScanIndexForward: false,
-      Limit: 50, //TODO: Handle pagination.
+      Limit: 100, //TODO: Handle pagination.
     })
   );
   const messages = await result.Items.map((item) => {
