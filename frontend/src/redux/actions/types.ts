@@ -28,5 +28,5 @@ export interface AppState {
   msg: MessagesState;
   menuOpen: boolean;
   timeFilterVisible: boolean;
-  timeWindowHours: number | null;
+  timeWindowDays: number | null;
 }

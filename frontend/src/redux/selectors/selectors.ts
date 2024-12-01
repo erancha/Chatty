@@ -1,11 +1,11 @@
 import { createSelector } from 'reselect';
 import { AppState } from '../actions/types';
-import { DEFAULT_TIME_WINDOW_HOURS } from '../constants';
+import { DEFAULT_TIME_WINDOW_DAYS } from '../constants';
 
-// Selector to get the timeWindowHours from state
-export const selectTimeWindow = (state: AppState) => state.timeWindowHours;
+// Selector to get the timeWindowDays from state
+export const selectTimeWindow = (state: AppState) => state.timeWindowDays;
 
-// Create a selector that returns timeWindowHours or a default value of 24 hours
-export const selectEffectiveTimeWindow = createSelector([selectTimeWindow], (timeWindowHours) =>
-  timeWindowHours !== null && timeWindowHours !== undefined ? timeWindowHours : DEFAULT_TIME_WINDOW_HOURS
+// Create a selector that returns timeWindowDays or a default value
+export const selectEffectiveTimeWindow = createSelector([selectTimeWindow], (timeWindowDays) =>
+  timeWindowDays !== null && timeWindowDays !== undefined ? timeWindowDays : DEFAULT_TIME_WINDOW_DAYS
 );

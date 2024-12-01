@@ -12,7 +12,7 @@ import { ToastContainer } from 'react-toastify';
 interface MessagesProps {
   messages: IMessage[];
   timeFilterVisible: boolean;
-  timeWindowHours: number | null;
+  timeWindowDays: number | null;
   sendMessage: (message: string) => void;
   markMessageViewed: (messageId: string) => void;
   setTimeWindow: (minutes: number | null) => void;
@@ -57,8 +57,8 @@ class Messages extends Component<MessagesProps, MessagesState> {
 
   handleTimeWindowChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.trim();
-    const timeWindowHours = value === '' ? null : Math.max(1, Number(value));
-    this.props.setTimeWindow(timeWindowHours);
+    const timeWindowDays = value === '' ? null : Math.max(1, Number(value));
+    this.props.setTimeWindow(timeWindowDays);
   };
 
   handleMessageClick = (messageId: string) => {
@@ -68,13 +68,10 @@ class Messages extends Component<MessagesProps, MessagesState> {
   };
 
   getFilteredMessages = () => {
-    const { messages, timeWindowHours } = this.props;
+    const { messages, timeWindowDays } = this.props;
+    if (!timeWindowDays) return messages;
 
-    if (!timeWindowHours) {
-      return messages;
-    }
-
-    const cutoffTime = Date.now() - timeWindowHours * 60 * 60 * 1000;
+    const cutoffTime = Date.now() - timeWindowDays * 24 * 60 * 60 * 1000;
     return messages.filter((msg) => msg.timestamp >= cutoffTime);
   };
 
@@ -88,7 +85,7 @@ class Messages extends Component<MessagesProps, MessagesState> {
 
   render() {
     const { error, loading, newMessage } = this.state;
-    const { timeFilterVisible, timeWindowHours } = this.props;
+    const { timeFilterVisible, timeWindowDays } = this.props;
 
     if (loading) return <div>Loading...</div>;
     if (error) return <div>Error: {error}</div>;
@@ -102,8 +99,8 @@ class Messages extends Component<MessagesProps, MessagesState> {
           {timeFilterVisible && (
             <div className='time-filter-container'>
               <div className='time-filter-title'>Time Filter:</div>
-              <input type='number' min='0' step='1' value={timeWindowHours || ''} onChange={this.handleTimeWindowChange} className='input-field' />
-              <span>hours</span>
+              <input type='number' min='0' step='1' value={timeWindowDays || ''} onChange={this.handleTimeWindowChange} className='input-field' />
+              <span>days</span>
             </div>
           )}
 
@@ -174,7 +171,7 @@ const selectColor = (sender: string | null) => {
 const mapStateToProps = (state: RootState) => ({
   messages: state.msg.messages,
   timeFilterVisible: state.timeFilterVisible,
-  timeWindowHours: selectEffectiveTimeWindow(state),
+  timeWindowDays: selectEffectiveTimeWindow(state),
 });
 
 const mapDispatchToProps = {

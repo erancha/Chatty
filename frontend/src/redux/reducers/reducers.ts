@@ -66,7 +66,7 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
     case TOGGLE_TIME_FILTER:
       return { ...state, timeFilterVisible: action.payload };
     case SET_TIME_WINDOW:
-      return { ...state, timeWindowHours: action.payload };
+      return { ...state, timeWindowDays: action.payload };
 
     case LOAD_PREVIOUS_MESSAGES:
       return {

@@ -1,5 +1,5 @@
 import { AppState } from './actions/types';
-import { DEFAULT_TIME_WINDOW_HOURS } from './constants';
+import { DEFAULT_TIME_WINDOW_DAYS } from './constants';
 
 const initialState: AppState = {
   showOverview: false,
@@ -16,7 +16,7 @@ const initialState: AppState = {
   },
   menuOpen: false,
   timeFilterVisible: false,
-  timeWindowHours: DEFAULT_TIME_WINDOW_HOURS,
+  timeWindowDays: DEFAULT_TIME_WINDOW_DAYS,
 };
 
 export default initialState;
