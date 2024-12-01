@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-AWS/React/WebSockets-based chat application.
+AWS/React/WebSockets-based serverless chat application.
 
 ## 2. Architecture Components
 
