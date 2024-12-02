@@ -12,4 +12,3 @@
    # .\dev-build-deploy-delete.ps1
 
    ./npm-start.ps1
-   Set-Location $PSScriptRoot
