@@ -40,8 +40,16 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
       return { ...state, showOverview: action.payload };
     case TOGGLE_MENU:
       return { ...state, menuOpen: action.payload };
+
     case SET_WS_CONNECTED:
-      return { ...state, wsConnected: action.payload };
+      return {
+        ...state,
+        wsConnected: action.payload,
+        msg: {
+          ...state.msg,
+          messages: action.payload ? state.msg.messages : [],
+        },
+      };
 
     // Authentication Actions
     case AUTH_LOGIN_SUCCESS:
@@ -100,7 +108,7 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
               timestamp: Date.now(),
               viewed: action.payload.sender === null,
             },
-            ...state.msg.messages, // Access the messages from the new nested structure
+            ...state.msg.messages,
           ],
         },
       };

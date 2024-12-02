@@ -48,7 +48,7 @@ class Messages extends Component<MessagesProps, MessagesState> {
   componentDidMount() {
     this.intervalId = setInterval(() => {
       this.forceUpdate();
-    }, 60 * 1000);
+    }, 60 * 60 * 1000); // every 1 hour re-apply the time window filter.
   }
 
   componentWillUnmount() {
