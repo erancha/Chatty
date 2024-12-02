@@ -56,7 +56,7 @@ The application uses Redux and Redux Thunk for state management:
 - AWS SAM (Serverless Application Model) is used for deployment
 - CloudFormation templates define the infrastructure as code
 - Single command deployment using `sam build` and `sam deploy`
-- The application is currently accessible online at https://d3r9xds8pmdxik.cloudfront.net.
+- The application is currently accessible online at https://d2gp7j2s0byyu1.cloudfront.net.
 
 ## 6. Scalability & Performance
 
