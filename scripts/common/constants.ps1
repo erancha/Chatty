@@ -19,7 +19,7 @@ try {
         stackName               = $stackName
         configFilePath          = "${appFolder}/frontend/src/appConfig.json"
         lastDevConfigFilePath   = "${appFolder}/frontend/appConfigDev.json"
-        region                  = aws configure get region # "eu-west-1"
+        region                  = "eu-central-1" # aws configure get region
     }
 }
 finally {
