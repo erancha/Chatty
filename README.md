@@ -2,31 +2,32 @@
 
 ## 1. Overview
 
-AWS/React/WebSockets-based serverless chat application.
+Chatty is a serverless chat application built with AWS, React, and WebSockets.
 
 ## 2. Architecture Components
 
-![Architecture diagram](https://lucid.app/publicSegments/view/82f588b6-80d9-4c6a-a32c-ef1095079703/image.jpeg)
+![Architecture diagram](https://lucid.app/publicSegments/view/109c4b9c-6851-428c-aa1d-25da61ab051c/image.jpeg)
 
 ### 2.1 Backend
 
-- AWS **Lambda** functions (Node.js) for serverless compute
-- AWS **API Gateway** with **WebSocket** APIs
-- AWS **Elasticache Redis** for managing connection ids of active users
-- AWS **SQS** for network isolation of the lambda functions interacting with Elasticache Redis in a private subnet from the lambda function interacting with the API gateway in the default lambda environment.
+- **AWS Lambda** functions (Node.js) for serverless compute
+- **AWS API Gateway** with **WebSocket** APIs
+- **AWS Cognito** for API authentication
+- **AWS Elasticache Redis** to manage active user connection IDs and cache messages
+- **AWS DynamoDB** for message storage
+- **AWS SQS** for network isolation between Lambda functions
 
 ### 2.2 Frontend
 
-- **React**-based Single Page Application (SPA)
-- Hosted on AWS **S3**
-- Accessed via AWS **CloudFront** for global content delivery
+- Single Page Application (SPA) built with **React**
+- Hosted on **AWS S3**
+- Accessed through **AWS CloudFront** for global delivery
 
 #### State Management
 
-The application uses Redux and Redux Thunk for state management:
-
+- Uses Redux and Redux Thunk
 - Messages are stored in the Redux store
-- Component connects to Redux store using `connect` HOC (Higher-Order Component)
+- Components connect to Redux using `connect` HOC (Higher-Order Component)
 
 #### Dependencies
 
@@ -35,39 +36,30 @@ The application uses Redux and Redux Thunk for state management:
 - WebSocket API
 - TypeScript
 
-## 3. Data Flow
+## 3. Security Considerations
 
-1. User interacts with the React-based frontend hosted on CloudFront from S3
-2. Frontend makes API calls to AWS API Gateway
-3. API Gateway authenticates users with Cognito and triggers appropriate Lambda functions
-4. Lambda functions interact with:
-   - Elasticache to manage connection ids of other active users
-   - SQS to send messages to connected users thru WebSocket API gateway
+- Data in transit is encrypted with **HTTPS**
+- User authentication via AWS Cognito with **Google** integration
+- Lambda functions and Elasticache are in a **private subnet**
+- IAM roles follow the least privilege principle
 
-## 4. Security Considerations
+## 4. Deployment
 
-- All data in transit is encrypted using **HTTPS**
-- User authentication is handled by AWS Cognito, with **Google** federated authentication
-- Lambda functions and Elasticache deployed into a **private subnet**
-- Least privilege principle applied to IAM roles
+- Uses AWS SAM (Serverless Application Model) for deployment
+- Infrastructure is defined with CloudFormation templates
+- Deploy with a single command: `sam build` and `sam deploy`
+- The application is available online at https://d2gp7j2s0byyu1.cloudfront.net.
 
-## 5. Deployment
+## 5. Scalability & Performance
 
-- AWS SAM (Serverless Application Model) is used for deployment
-- CloudFormation templates define the infrastructure as code
-- Single command deployment using `sam build` and `sam deploy`
-- The application is currently accessible online at https://d2gp7j2s0byyu1.cloudfront.net.
+- Serverless architecture enables automatic scaling
+- CloudFront provides low-latency content delivery
 
-## 6. Scalability & Performance
+## 6. Monitoring & Logging
 
-- Serverless architecture allows automatic scaling
-- CloudFront ensures low-latency content delivery
+- Monitoring and logging via AWS CloudWatch
 
-## 7. Monitoring & Logging
+## 7. Cost Optimization
 
-- AWS CloudWatch for monitoring and logging
-
-## 8. Cost Optimization
-
-- Pay-per-use model with serverless components
-- Elasticache and VPC resources incur hourly costs
+- Pay-per-use model for serverless components
+- Elasticache and VPC resources have hourly costs

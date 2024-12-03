@@ -6,18 +6,25 @@ const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb'
 
 const redisClient = new Redis(process.env.ELASTICACHE_REDIS_ADDRESS);
 
+//===========================================
+// $connect handler:
+//===========================================
 exports.handler = async (event) => {
   // Extract JWT token and chatId from the query string:
-  let token, chatId;
+  let currentJwtToken, currentChatId;
   if (event.queryStringParameters && event.queryStringParameters.token) {
-    token = event.queryStringParameters.token;
-    chatId = event.queryStringParameters.chatId;
-    if (!chatId)
+    currentJwtToken = event.queryStringParameters.token;
+    currentChatId = event.queryStringParameters.chatId;
+    if (!currentChatId)
       console.warn(
-        `'chatId' not found in the query string: ${JSON.stringify(event, null, 2)} , decoded token: ${JSON.stringify(jwt.decode(token), null, 2)}`
+        `'chatId' not found in the query string: ${JSON.stringify(event, null, 2)} , decoded token: ${JSON.stringify(
+          jwt.decode(currentJwtToken),
+          null,
+          2
+        )}`
       );
   } else throw new Error('JWT token is missing in the query string');
-  const decodedToken = jwt.decode(token);
+  const decodedToken = jwt.decode(currentJwtToken);
   if (!decodedToken || !decodedToken.sub) throw new Error('Invalid token: Missing user id (sub)');
 
   // Extract user id (sub) and user name from the token
@@ -31,28 +38,28 @@ exports.handler = async (event) => {
 local currentConnectionId = KEYS[1]
 local currentUserId = KEYS[2]
 local currentUserName = KEYS[3]
-local chatId = KEYS[4]
+local currentChatId = KEYS[4]
 local stackName = ARGV[1]
 
 -- Store the user ID, user name and chat Id for the connection ID:
 redis.call('set', stackName .. ':userId(' .. currentConnectionId .. ')', currentUserId)
 redis.call('set', stackName .. ':userName(' .. currentConnectionId .. ')', currentUserName)
-redis.call('set', stackName .. ':chatId(' .. currentConnectionId .. ')', chatId)
+redis.call('set', stackName .. ':chatId(' .. currentConnectionId .. ')', currentChatId)
 
 -- Add the connection ID to the chat's connections set
-redis.call('sadd', stackName .. ':connections(' .. chatId .. ')', currentConnectionId)
+redis.call('sadd', stackName .. ':connections(' .. currentChatId .. ')', currentConnectionId)
 
 -- Return all connection IDs for the chat
-return redis.call('smembers', stackName .. ':connections(' .. chatId .. ')')
+return redis.call('smembers', stackName .. ':connections(' .. currentChatId .. ')')
 `;
 
   try {
     // Refer to the comments inside the lua script:
     const stackName = process.env.STACK_NAME;
-    const connectionIds = await redisClient.eval(luaScript, 4, currentConnectionId, currentUserId, currentUserName, chatId, stackName);
+    const connectionIds = await redisClient.eval(luaScript, 4, currentConnectionId, currentUserId, currentUserName, currentChatId, stackName);
     console.log(JSON.stringify({ currentConnectionId, connectionIds }));
 
-    // Load and send to the client previous chat messages from DynamoDB:
+    // Load and send the previous chat messages to the client:
     const sqsClient = new SQSClient({ region: process.env.APP_AWS_REGION });
     const sqsParams = {
       QueueUrl: process.env.SQS_QUEUE_URL,
@@ -60,8 +67,8 @@ return redis.call('smembers', stackName .. ':connections(' .. chatId .. ')')
     };
     sqsParams.MessageBody = JSON.stringify({
       targetConnectionIds: [currentConnectionId],
-      chatId,
-      message: { previousMessages: await loadPreviousMessages(chatId, currentUserName) },
+      chatId: currentChatId,
+      message: { previousMessages: await loadPreviousChatMessages(currentChatId, currentUserName) },
       skipSavingToDB: true,
     });
     await sqsClient.send(new SendMessageCommand(sqsParams));
@@ -82,7 +89,7 @@ return redis.call('smembers', stackName .. ':connections(' .. chatId .. ')')
     try {
       sqsParams.MessageBody = JSON.stringify({
         targetConnectionIds: [currentConnectionId],
-        chatId,
+        chatId: currentChatId,
         message: { content, sender: '$connect' },
         skipSavingToDB: true,
       });
@@ -98,30 +105,63 @@ return redis.call('smembers', stackName .. ':connections(' .. chatId .. ')')
   }
 };
 
+//===========================================
+// Load previous chat messages:
+//===========================================
 const dynamodbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
-// Load previous chat messages from DynamoDB:
-async function loadPreviousMessages(currentChatId, currentUserName) {
-  const result = await dynamodbDocClient.send(
-    new QueryCommand({
-      TableName: process.env.MESSAGES_TABLE_NAME,
-      IndexName: 'ChatIdUpdatedIndex',
-      KeyConditionExpression: 'chatId = :chatId',
-      ExpressionAttributeValues: { ':chatId': currentChatId },
-      Select: 'ALL_ATTRIBUTES',
-      ScanIndexForward: false,
-      Limit: 100, //TODO: Handle pagination.
-    })
-  );
-  const messages = await result.Items.map((item) => {
+async function loadPreviousChatMessages(currentChatId, currentUserName) {
+  const startTime = Date.now();
+
+  // Try loading the previous chat messages from Redis:
+  const chatMessagesKey = `${process.env.STACK_NAME}:messages(${currentChatId})`;
+  let previousChatMessages = await redisClient.lrange(chatMessagesKey, 0, -1);
+  if (previousChatMessages.length > 0) {
+    previousChatMessages = previousChatMessages.map((message) => JSON.parse(message));
+  } else {
+    // Load the previous chat messages from DynamoDB:
+    const result = await dynamodbDocClient.send(
+      new QueryCommand({
+        TableName: process.env.MESSAGES_TABLE_NAME,
+        IndexName: 'ChatIdUpdatedIndex',
+        KeyConditionExpression: 'chatId = :chatId',
+        ExpressionAttributeValues: { ':chatId': currentChatId },
+        Select: 'ALL_ATTRIBUTES',
+        ScanIndexForward: false,
+        Limit: 100, //TODO: Handle pagination.
+      })
+    );
+    previousChatMessages = await result.Items.map((item) => {
+      return {
+        id: item.id,
+        timestamp: new Date(item.updatedAt).getTime(),
+        content: item.content,
+        sender: item.sender,
+        viewed: true,
+      };
+    });
+
+    // Insert the previous chat messages into Redis:
+    const previousMessagesStringifiedItems = previousChatMessages.map((message) => JSON.stringify(message));
+    await redisClient.rpush(chatMessagesKey, ...previousMessagesStringifiedItems);
+
+    // Example of removing the last item and inserting a new item at the beginning
+    // const newMessage = { /* your new message object */ }; // Define your new message here
+    // await redisClient.rpop(redisKey); // Remove the last item
+    // await redisClient.lpush(redisKey, JSON.stringify(newMessage)); // Insert the new item at the beginning
+  }
+
+  // Nullify the sender attribute for records with the same sender as the current username (as done for new messages by the current user):
+  previousChatMessages = previousChatMessages.map((message) => {
+    // console.log(message, currentUserName);
     return {
-      id: item.id,
-      timestamp: new Date(item.updatedAt).getTime(),
-      content: item.content,
-      sender: item.sender !== currentUserName ? item.sender : null,
-      viewed: true,
+      ...message,
+      sender: message.sender !== currentUserName ? message.sender : null,
     };
   });
 
-  return messages;
+  const elapsedTime = Date.now() - startTime;
+  console.log(`loadPreviousChatMessages -> ${previousChatMessages.length} items, elapsed time: ${elapsedTime} ms`);
+
+  return previousChatMessages;
 }

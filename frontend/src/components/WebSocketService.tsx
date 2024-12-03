@@ -140,18 +140,18 @@ class WebSocketService extends Component<Props> {
       };
 
       this.webSocket.onclose = (event) => {
-        console.log(this.formatLog(`** WebSocket connection closed **: ${JSON.stringify(event)}`));
+        console.warn(this.formatLog(`** WebSocket connection closed **: ${JSON.stringify(event)}`));
         this.props.setWSConnected(false);
 
         if (event.code === 1006 && ++this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
-          // console.log(this.formatLog(`Attempting to reconnect in ${this.reconnectDelay / 1000} seconds...`));
+          console.warn(this.formatLog(`Attempting to reconnect in ${this.reconnectDelay / 1000} seconds...`));
           this.reconnectTimeout = setTimeout(() => {
             this.reconnectDelay *= 2;
             this.props.setWSConnected(true);
           }, this.reconnectDelay);
         } else if (event.isTrusted && ++this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
           this.reconnectTimeout = setTimeout(() => {
-            // console.log(this.formatLog('Attempting to reconnect...'));
+            console.warn(this.formatLog('Attempting to reconnect...'));
             this.props.setWSConnected(true);
           }, 1000);
         } else {

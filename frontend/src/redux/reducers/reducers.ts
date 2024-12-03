@@ -81,10 +81,7 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
         ...state,
         msg: {
           ...state.msg,
-          messages: [
-            ...action.payload,
-            ...state.msg.messages, // Access the messages from the new nested structure
-          ],
+          messages: [...action.payload, ...state.msg.messages],
         },
       };
     case SEND_MESSAGE:
@@ -92,7 +89,7 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
         ...state,
         msg: {
           ...state.msg,
-          lastSentMessage: action.payload, // Update lastSentMessage in the new nested structure
+          lastSentMessage: action.payload,
         },
       };
     case ADD_MESSAGE:

@@ -70,6 +70,7 @@ try {
             else {
                 # In feature branch, reuse the following resources from the main branch:
                 $parameterOverrides += "ExistingMessagesTableName='cht-messages'"
+                $parameterOverrides += "ExistingMessagesTableStreamArn='arn:aws:dynamodb:eu-central-1:575491442067:table/cht-messages/stream/2024-12-03T15:56:33.705'"
             }
 
             # Join the parameter overrides into a single string

@@ -69,6 +69,9 @@ Parameters:
     Description: 'Name of an existing MessagesTable (leave empty to create a new one)'
     Type: String
     Default: ''
+  ExistingMessagesTableStreamArn:
+    Description: 'Arn of an existing MessagesTable stream'
+    Type: String
 
 Conditions:
   HasCustomDomainName: !Not [!Equals [!Ref CustomDomainName, '']]
@@ -606,6 +609,89 @@ Resources:
           Projection:
             ProjectionType: ALL
       BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+
+  # Lambda Function to process the stream from MessagesTable
+  MessagesStreamProcessor:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/websocket/messages/
+      Handler: messagesStreamProcessor.handler
+      Runtime: nodejs20.x
+      Layers:
+        - !Ref IoredisLayer
+      Environment:
+        Variables:
+          ELASTICACHE_REDIS_ADDRESS: !Ref ExistingElasticacheRedisClusterAddress
+          STACK_NAME: !Ref AWS::StackName
+      VpcConfig:
+        SubnetIds:
+          - !Ref ExistingPrivateSubnetId
+        SecurityGroupIds:
+          - !Ref WebSocketLambdaSG
+      Role: !GetAtt MessagesStreamProcessorRole.Arn
+
+  MessagesStreamProcessorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBStreamAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:DescribeStream
+                  - dynamodb:ListStreams
+                Resource:
+                  - !If
+                    - CreateMessagesTable
+                    - !GetAtt MessagesTable.StreamArn
+                    - !Ref ExistingMessagesTableStreamArn
+        - PolicyName: ElastiCacheAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'elasticache:Connect'
+                  - 'elasticache:DescribeCacheClusters'
+                Resource: '*'
+        - PolicyName: NetworkInterfaceAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ec2:CreateNetworkInterface'
+                  - 'ec2:DescribeNetworkInterfaces'
+                  - 'ec2:DeleteNetworkInterface'
+                Resource: '*'
+
+  # Event Source Mapping from MessagesTable to MessagesStreamProcessor
+  MessagesStreamEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 100
+      Enabled: true
+      EventSourceArn: !If
+        - CreateMessagesTable
+        - !GetAtt MessagesTable.StreamArn
+        - !Ref ExistingMessagesTableStreamArn
+      FunctionName: !Ref MessagesStreamProcessor
+      StartingPosition: LATEST
 
 Outputs:
   S3BucketName:

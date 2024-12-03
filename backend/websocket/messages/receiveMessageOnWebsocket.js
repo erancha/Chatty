@@ -39,6 +39,7 @@ return {userName, chatId, chatConnectionIds}
     console.warn('No user found for the given connection ID.');
   }
 
+  // Insert a record to the SQS queue:
   const sqsClient = new SQSClient({ region: process.env.APP_AWS_REGION });
   const sqsParams = {
     QueueUrl: process.env.SQS_QUEUE_URL,
