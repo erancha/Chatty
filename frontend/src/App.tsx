@@ -57,10 +57,10 @@ class AppComponent extends React.Component<AppProps & { auth: AuthContextProps }
                 </div>
 
                 <a
-                  href='https://lucid.app/publicSegments/view/f335ae4f-bd19-4ab9-a09a-3e06eecf682c/image.jpeg\'
+                  href='https://lucid.app/publicSegments/view/d031250d-0a68-4ff3-8b7d-29bfc376e14c/image.jpeg'
                   target='_blank'
                   rel='noopener noreferrer'>
-                  <img src='https://lucid.app/publicSegments/view/f335ae4f-bd19-4ab9-a09a-3e06eecf682c/image.jpeg\' alt='No User Authenticated' />
+                  <img src='https://lucid.app/publicSegments/view/d031250d-0a68-4ff3-8b7d-29bfc376e14c/image.jpeg' alt='No User Authenticated' />
                 </a>
               </div>
             )}
