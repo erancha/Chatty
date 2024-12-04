@@ -64,13 +64,13 @@ return redis.call('smembers', stackName .. ':connections(' .. currentChatId .. '
     const sqsParams = {
       QueueUrl: process.env.SQS_QUEUE_URL,
       MessageGroupId: 'Default', // Required for FIFO queues
+      MessageBody: JSON.stringify({
+        targetConnectionIds: [currentConnectionId],
+        chatId: currentChatId,
+        message: { previousMessages: await loadPreviousChatMessages(currentChatId, currentUserName) },
+        skipSavingToDB: true,
+      }),
     };
-    sqsParams.MessageBody = JSON.stringify({
-      targetConnectionIds: [currentConnectionId],
-      chatId: currentChatId,
-      message: { previousMessages: await loadPreviousChatMessages(currentChatId, currentUserName) },
-      skipSavingToDB: true,
-    });
     await sqsClient.send(new SendMessageCommand(sqsParams));
 
     // Send a list of connected users:

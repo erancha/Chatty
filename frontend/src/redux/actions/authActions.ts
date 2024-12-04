@@ -40,7 +40,7 @@ export const loginWithGoogle = (auth: AuthContextProps) => async (dispatch: Disp
 
 export const checkAuthStatus = (auth: AuthContextProps) => async (dispatch: Dispatch) => {
   try {
-    // console.log(`checkAuthStatus: ${JSON.stringify(auth.user, null, 3)}`);
+    // console.log(`checkAuthStatus: ${JSON.stringify(auth.user?.profile, null, 3)}`);
     if (auth.user?.profile.name && auth.user.id_token) {
       dispatch(authLoginSuccess(auth.user.id_token.toString(), auth.user.profile.name));
     } else {

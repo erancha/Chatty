@@ -297,6 +297,46 @@ Resources:
           - !Ref WebSocketLambdaSG
       Role: !GetAtt WebSocketLambdaRole.Arn
 
+  # Sends a random message to all connected clients every 1 hour.
+  SendRandomMessageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/websocket/messages/
+      Handler: sendRandomMessage.handler
+      Runtime: nodejs20.x
+      Layers:
+        - !Ref jsonwebtokenLayer
+        - !Ref IoredisLayer
+        - !Ref AwsSdkV3Layer
+      Environment:
+        Variables:
+          ELASTICACHE_REDIS_ADDRESS: !Ref ExistingElasticacheRedisClusterAddress
+          STACK_NAME: !Ref AWS::StackName
+          MESSAGES_TABLE_NAME: !If [CreateMessagesTable, !Ref MessagesTable, !Ref ExistingMessagesTableName]
+          SQS_QUEUE_URL: !Ref MessagesToWebsocketsQueue
+      VpcConfig:
+        SubnetIds:
+          - !Ref ExistingPrivateSubnetId
+        SecurityGroupIds:
+          - !Ref WebSocketLambdaSG
+      Role: !GetAtt WebSocketLambdaRole.Arn
+
+  SendRandomMessageScheduleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: cron(0 8-23 * * ? *) # Every hour from 08:00 to 23:00
+      Targets:
+        - Arn: !GetAtt SendRandomMessageFunction.Arn
+          Id: 'SendRandomMessageFunction'
+
+  SendRandomMessageFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SendRandomMessageFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt SendRandomMessageScheduleRule.Arn
+
   # Security group and IAM Role for WebSocket Lambda functions:
   # -----------------------------------------------------------
   WebSocketLambdaSG:
