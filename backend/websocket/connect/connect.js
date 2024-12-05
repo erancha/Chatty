@@ -5,11 +5,17 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 
 const redisClient = new Redis(process.env.ELASTICACHE_REDIS_ADDRESS);
+const STACK_NAME = process.env.STACK_NAME;
+const AWS_REGION = process.env.APP_AWS_REGION;
+const MESSAGES_TABLE_NAME = process.env.MESSAGES_TABLE_NAME;
+const SQS_QUEUE_URL = process.env.SQS_QUEUE_URL;
 
 //===========================================
 // $connect handler:
 //===========================================
 exports.handler = async (event) => {
+  // console.log(JSON.stringify(event, null, 3));
+
   // Extract JWT token and chatId from the query string:
   let currentJwtToken, currentChatId;
   if (event.queryStringParameters && event.queryStringParameters.token) {
@@ -39,82 +45,94 @@ local currentConnectionId = KEYS[1]
 local currentUserId = KEYS[2]
 local currentUserName = KEYS[3]
 local currentChatId = KEYS[4]
-local stackName = ARGV[1]
+local STACK_NAME = ARGV[1]
+local EXPIRATION_TIME = tonumber(ARGV[2])
 
--- Store the user ID, user name and chat Id for the connection ID:
-redis.call('set', stackName .. ':userId(' .. currentConnectionId .. ')', currentUserId)
-redis.call('set', stackName .. ':userName(' .. currentConnectionId .. ')', currentUserName)
-redis.call('set', stackName .. ':chatId(' .. currentConnectionId .. ')', currentChatId)
+-- Store the user ID, user name, and chat ID for the connection ID with expiration
+redis.call('set', STACK_NAME .. ':userId(' .. currentConnectionId .. ')', currentUserId, 'EX', EXPIRATION_TIME)
+redis.call('set', STACK_NAME .. ':userName(' .. currentConnectionId .. ')', currentUserName, 'EX', EXPIRATION_TIME)
+redis.call('set', STACK_NAME .. ':chatId(' .. currentConnectionId .. ')', currentChatId, 'EX', EXPIRATION_TIME)
 
--- Add the connection ID to the chat's connections set
-redis.call('sadd', stackName .. ':connections(' .. currentChatId .. ')', currentConnectionId)
+-- Add the connection ID to the chat's connections set and set expiration
+redis.call('sadd', STACK_NAME .. ':connections(' .. currentChatId .. ')', currentConnectionId)
+redis.call('expire', STACK_NAME .. ':connections(' .. currentChatId .. ')', EXPIRATION_TIME)
 
 -- Return all connection IDs for the chat
-return redis.call('smembers', stackName .. ':connections(' .. currentChatId .. ')')
+return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. ')')
 `;
 
   try {
     // Refer to the comments inside the lua script:
-    const stackName = process.env.STACK_NAME;
-    const connectionIds = await redisClient.eval(luaScript, 4, currentConnectionId, currentUserId, currentUserName, currentChatId, stackName);
+    const EXPIRATION_TIME = 3600; // === 1 hour
+    const connectionIds = await redisClient.eval(
+      luaScript,
+      4,
+      currentConnectionId,
+      currentUserId,
+      currentUserName,
+      currentChatId,
+      STACK_NAME,
+      EXPIRATION_TIME
+    );
     console.log(JSON.stringify({ currentConnectionId, connectionIds }));
 
     // Load and send the previous chat messages to the client:
-    const sqsClient = new SQSClient({ region: process.env.APP_AWS_REGION });
+    const connectedUsers = await prepareConnectedUsersMessage(connectionIds, decodedToken.sub === '23743842-4061-709b-44f8-4ef9a527509d');
+    const previousMessages = await loadPreviousChatMessages(currentChatId, currentUserName);
+    const sqsClient = new SQSClient({ region: AWS_REGION });
     const sqsParams = {
-      QueueUrl: process.env.SQS_QUEUE_URL,
+      QueueUrl: SQS_QUEUE_URL,
       MessageGroupId: 'Default', // Required for FIFO queues
       MessageBody: JSON.stringify({
         targetConnectionIds: [currentConnectionId],
         chatId: currentChatId,
-        message: { previousMessages: await loadPreviousChatMessages(currentChatId, currentUserName) },
+        message: {
+          previousMessages: [
+            { content: connectedUsers, sender: '$connect', id: performance.now().toString(), timestamp: Date.now() },
+            ...previousMessages,
+          ],
+        },
         skipSavingToDB: true,
       }),
     };
+
     await sqsClient.send(new SendMessageCommand(sqsParams));
-
-    // Send a list of connected users:
-    let content = 'Connected users:\n';
-    for (const connectionId of connectionIds) {
-      try {
-        const username = await redisClient.get(`${stackName}:userName(${connectionId})`);
-        content += `  - ${username}\t`;
-        if (decodedToken.sub === '23743842-4061-709b-44f8-4ef9a527509d') content += ` ('${connectionId}')`;
-        content += '\n';
-      } catch (error) {
-        console.error(`Error reading username for connection: '${connectionId}'.`, error);
-      }
-    }
-
-    try {
-      sqsParams.MessageBody = JSON.stringify({
-        targetConnectionIds: [currentConnectionId],
-        chatId: currentChatId,
-        message: { content, sender: '$connect' },
-        skipSavingToDB: true,
-      });
-      await sqsClient.send(new SendMessageCommand(sqsParams));
-    } catch (error) {
-      console.error(`Error inserting to SQS for connectionId: '${currentConnectionId}'.`, error);
-    }
 
     return { statusCode: 200 };
   } catch (error) {
-    console.error('Error executing Lua script for $connect handler:', error);
+    console.error(error);
     return { statusCode: 500, body: JSON.stringify({ error: 'Internal Server Error' }) };
   }
 };
 
-//===========================================
+//================================================================
+// Prepare a list of connected users as a string (into 'content'):
+//================================================================
+async function prepareConnectedUsersMessage(connectionIds, includeConnectedId) {
+  let content = 'Connected users:\n';
+  for (const connectionId of connectionIds) {
+    try {
+      const username = await redisClient.get(`${STACK_NAME}:userName(${connectionId})`);
+      content += `  - ${username}\t`;
+      if (includeConnectedId) content += ` ('${connectionId}')`;
+      content += '\n';
+    } catch (error) {
+      console.error(`Error reading username for connection: '${connectionId}'.`, error);
+    }
+  }
+  return content;
+}
+
+//================================================================
 // Load previous chat messages:
-//===========================================
+//================================================================
 const dynamodbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 async function loadPreviousChatMessages(currentChatId, currentUserName) {
   const startTime = Date.now();
 
   // Try loading the previous chat messages from Redis:
-  const chatMessagesKey = `${process.env.STACK_NAME}:messages(${currentChatId})`;
+  const chatMessagesKey = `${STACK_NAME}:messages(${currentChatId})`;
   let previousChatMessages = await redisClient.lrange(chatMessagesKey, 0, -1);
   if (previousChatMessages.length > 0) {
     previousChatMessages = previousChatMessages.map((message) => JSON.parse(message));
@@ -122,7 +140,7 @@ async function loadPreviousChatMessages(currentChatId, currentUserName) {
     // Load the previous chat messages from DynamoDB:
     const result = await dynamodbDocClient.send(
       new QueryCommand({
-        TableName: process.env.MESSAGES_TABLE_NAME,
+        TableName: MESSAGES_TABLE_NAME,
         IndexName: 'ChatIdUpdatedIndex',
         KeyConditionExpression: 'chatId = :chatId',
         ExpressionAttributeValues: { ':chatId': currentChatId },

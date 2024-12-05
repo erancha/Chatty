@@ -45,10 +45,6 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
       return {
         ...state,
         wsConnected: action.payload,
-        msg: {
-          ...state.msg,
-          messages: action.payload ? state.msg.messages : [],
-        },
       };
 
     // Authentication Actions
@@ -81,7 +77,7 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
         ...state,
         msg: {
           ...state.msg,
-          messages: [...action.payload, ...state.msg.messages],
+          messages: [...action.payload],
         },
       };
     case SEND_MESSAGE:

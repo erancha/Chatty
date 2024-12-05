@@ -43,6 +43,7 @@
 }
 .network-icon.disconnected {
   color: red;
+  scale: 150%;
 }
 
 .text-button.toggle-overview {
@@ -216,6 +217,44 @@
   background-color: #f0f0f0;
   padding: 10px;
 }
+.messages-container.disconnected {
+  pointer-events: none; /* Prevents interaction with content */
+  background-color: gray;
+}
+
+.new-message-container {
+  display: flex;
+  background-color: white;
+  padding: 10px;
+  border-top: 1px solid #ddd;
+}
+
+.new-message-text {
+  flex-grow: 1;
+  margin-right: 10px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 10px;
+  resize: none;
+  max-height: 100px;
+}
+
+.send-button {
+  background-color: #25d366;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.send-button:hover {
+  background-color: #128c7e;
+}
 
 .time-filter-container {
   display: flex;
@@ -298,40 +337,6 @@
 
 .message-bubble.viewed {
   opacity: 0.7;
-}
-
-.new-message-container {
-  display: flex;
-  background-color: white;
-  padding: 10px;
-  border-top: 1px solid #ddd;
-}
-
-.new-message-text {
-  flex-grow: 1;
-  margin-right: 10px;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  padding: 10px;
-  resize: none;
-  max-height: 100px;
-}
-
-.send-button {
-  background-color: #25d366;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.send-button:hover {
-  background-color: #128c7e;
 }
 
 /* Responsive Design */

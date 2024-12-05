@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown';
 import { ToastContainer } from 'react-toastify';
 
 interface MessagesProps {
+  wsConnected: boolean;
   messages: IMessage[];
   timeFilterVisible: boolean;
   timeWindowDays: number | null;
@@ -95,7 +96,7 @@ class Messages extends Component<MessagesProps, MessagesState> {
     return (
       <div>
         <ToastContainer limit={1} />
-        <div className='messages-container'>
+        <div className={`messages-container${!this.props.wsConnected ? ' disconnected' : ''}`}>
           {timeFilterVisible && (
             <div className='time-filter-container'>
               <div className='time-filter-title'>Time Filter:</div>
@@ -169,6 +170,7 @@ const selectColor = (sender: string | null) => {
 };
 
 const mapStateToProps = (state: RootState) => ({
+  wsConnected: state.wsConnected,
   messages: state.msg.messages,
   timeFilterVisible: state.timeFilterVisible,
   timeWindowDays: selectEffectiveTimeWindow(state),
