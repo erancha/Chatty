@@ -3,6 +3,7 @@ const Redis = require('ioredis');
 const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { collectConnectionsAndUsernames } = require('/opt/connections');
 
 const redisClient = new Redis(process.env.ELASTICACHE_REDIS_ADDRESS);
 const STACK_NAME = process.env.STACK_NAME;
@@ -63,7 +64,7 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
 
   try {
     // Refer to the comments inside the lua script:
-    const EXPIRATION_TIME = 3600; // === 1 hour
+    const EXPIRATION_TIME = 12 * 60 * 60; // === 12 hours
     const connectionIds = await redisClient.eval(
       luaScript,
       4,
@@ -74,10 +75,10 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
       STACK_NAME,
       EXPIRATION_TIME
     );
-    console.log(JSON.stringify({ currentConnectionId, connectionIds }));
+    console.log(JSON.stringify({ currentConnectionId, connectionIds, currentUserName, currentUserId }));
 
     // Load and send the previous chat messages to the client:
-    const connectedUsers = await prepareConnectedUsersMessage(connectionIds, decodedToken.sub === '23743842-4061-709b-44f8-4ef9a527509d');
+    const connections = await collectConnectionsAndUsernames(redisClient, STACK_NAME, connectionIds);
     const previousMessages = await loadPreviousChatMessages(currentChatId, currentUserName);
     const sqsClient = new SQSClient({ region: AWS_REGION });
     const sqsParams = {
@@ -87,10 +88,8 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
         targetConnectionIds: [currentConnectionId],
         chatId: currentChatId,
         message: {
-          previousMessages: [
-            { content: connectedUsers, sender: '$connect', id: performance.now().toString(), timestamp: Date.now() },
-            ...previousMessages,
-          ],
+          connections,
+          previousMessages,
         },
         skipSavingToDB: true,
       }),
@@ -104,24 +103,6 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
     return { statusCode: 500, body: JSON.stringify({ error: 'Internal Server Error' }) };
   }
 };
-
-//================================================================
-// Prepare a list of connected users as a string (into 'content'):
-//================================================================
-async function prepareConnectedUsersMessage(connectionIds, includeConnectedId) {
-  let content = 'Connected users:\n';
-  for (const connectionId of connectionIds) {
-    try {
-      const username = await redisClient.get(`${STACK_NAME}:userName(${connectionId})`);
-      content += `  - ${username}\t`;
-      if (includeConnectedId) content += ` ('${connectionId}')`;
-      content += '\n';
-    } catch (error) {
-      console.error(`Error reading username for connection: '${connectionId}'.`, error);
-    }
-  }
-  return content;
-}
 
 //================================================================
 // Load previous chat messages:
@@ -179,7 +160,7 @@ async function loadPreviousChatMessages(currentChatId, currentUserName) {
   });
 
   const elapsedTime = Date.now() - startTime;
-  console.log(`loadPreviousChatMessages -> ${previousChatMessages.length} items, elapsed time: ${elapsedTime} ms`);
+  // console.log(`loadPreviousChatMessages -> ${previousChatMessages.length} items, elapsed time: ${elapsedTime} ms`);
 
   return previousChatMessages;
 }

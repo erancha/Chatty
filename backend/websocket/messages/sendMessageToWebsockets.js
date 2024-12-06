@@ -24,13 +24,14 @@ exports.handler = async (event) => {
     await Promise.all(
       recordsExtractedFromQueue.map(async (record) => {
         const extractedRecord = JSON.parse(record.body);
+        console.log(`Extracted record: ${JSON.stringify(extractedRecord)}`);
 
         // Send the message to all connected clients excluding the sender:
         for (const connectionId of extractedRecord.targetConnectionIds) {
           if (connectionId !== extractedRecord.senderConnectionId) {
             try {
               const jsonMessage = JSON.stringify(extractedRecord.message);
-              console.log(`Sending a message on connection: '${connectionId}' : ${jsonMessage}`);
+              // console.log(`Sending a message on connection: '${connectionId}' : ${jsonMessage}`);
               await appGatewayClient.send(
                 new PostToConnectionCommand({
                   ConnectionId: connectionId,

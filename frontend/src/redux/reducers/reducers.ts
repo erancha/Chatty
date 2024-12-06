@@ -1,19 +1,21 @@
 import {
   TOGGLE_OVERVIEW,
   TOGGLE_MENU,
+  SET_WS_CONNECTED,
+  SET_CONNECTIONS,
   LOAD_PREVIOUS_MESSAGES,
   ADD_MESSAGE,
   SEND_MESSAGE,
-  SET_WS_CONNECTED,
   MARK_MESSAGE_VIEWED,
   TOGGLE_TIME_FILTER,
   SET_TIME_WINDOW,
   IToggleOverview,
   IToggleMenu,
+  ISetWSConnected,
+  ISetConnections,
   ILoadPreviousMessages,
   IAddMessage,
   ISendMessage,
-  ISetWSConnected,
   IMarkMessageViewed,
   IToggleTimeFilter,
   ISetTimeWindow,
@@ -23,16 +25,17 @@ import { AppState } from '../actions/types';
 import initialState from '../initialState';
 
 type AppAction =
+  | AuthActionTypes
   | IToggleOverview
   | IToggleMenu
+  | ISetWSConnected
+  | ISetConnections
   | ILoadPreviousMessages
   | IAddMessage
   | ISendMessage
-  | ISetWSConnected
   | IMarkMessageViewed
   | IToggleTimeFilter
-  | ISetTimeWindow
-  | AuthActionTypes;
+  | ISetTimeWindow;
 
 const rootReducer = (state = initialState, action: AppAction): AppState => {
   switch (action.type) {
@@ -44,7 +47,21 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
     case SET_WS_CONNECTED:
       return {
         ...state,
-        wsConnected: action.payload,
+        websockets: {
+          ...state.websockets,
+          isConnected: action.payload,
+          // connections: [],
+          // lastIncomingMessageTimestamp: action.payload ? new Date().toLocaleString('en-GB', options) : '',
+        },
+      };
+    case SET_CONNECTIONS:
+      return {
+        ...state,
+        websockets: {
+          ...state.websockets,
+          // connections: action.payload,
+          // lastIncomingMessageTimestamp: action.payload ? new Date().toLocaleString('en-GB', options) : '',
+        },
       };
 
     // Authentication Actions
@@ -118,5 +135,11 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
       return state;
   }
 };
+
+// const options: Intl.DateTimeFormatOptions = {
+//   hour: 'numeric',
+//   minute: 'numeric',
+//   hour12: false,
+// };
 
 export default rootReducer;

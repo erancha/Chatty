@@ -18,6 +18,7 @@ local length = redis.call('LLEN', chatMessagesKey)
 -- Remove the last item if the length exceeds the maxItems limit
 if length > maxItems then
     redis.call('RPOP', chatMessagesKey)
+    length = length - 1
 end
 
 return length
@@ -36,7 +37,7 @@ exports.handler = async (event) => {
 
       // Execute the Lua script to insert the new item and manage the list
       const maxItems = 100; // Set your desired limit
-      const itemLength = await redisClient.eval(
+      await redisClient.eval(
         luaScript,
         0,
         chatMessagesKey,
@@ -49,8 +50,6 @@ exports.handler = async (event) => {
         }),
         maxItems
       );
-
-      console.log(`List length after operation: ${itemLength}`);
     }
   }
 

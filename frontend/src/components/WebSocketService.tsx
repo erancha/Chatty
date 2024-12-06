@@ -2,10 +2,10 @@ import React from 'react';
 import { connect, ConnectedProps } from 'react-redux';
 import { Component } from 'react';
 import { RootState } from '../redux/store/store';
-import { setWSConnected, loadPreviousMessages, addMessage } from '../redux/actions/actions';
+import { setWSConnected, setConnections, loadPreviousMessages, addMessage } from '../redux/actions/actions';
 import { Network } from 'lucide-react';
 import appConfigData from '../appConfig.json';
-import { INewMessage } from 'redux/actions/types';
+import { IConnection, INewMessage } from 'redux/actions/types';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -71,9 +71,9 @@ class WebSocketService extends Component<Props> {
   componentDidUpdate(prevProps: Props) {
     console.log(
       this.formatLog(
-        `WebSocketService.componentDidUpdate: this.props.wsConnected: ${this.props.wsConnected} , prevProps.wsConnected: ${
-          prevProps.wsConnected
-        }, this.props.jwtToken: ${this.props.jwtToken ? 'exists' : 'null'}, prevProps.jwtToken: ${prevProps.jwtToken ? 'exists' : 'null'}`
+        `WebSocketService.componentDidUpdate: wsConnected: ${this.props.wsConnected} , prevProps: ${prevProps.wsConnected}, jwtToken: ${
+          this.props.jwtToken ? 'v' : '-'
+        }, prevProps: ${prevProps.jwtToken ? 'v' : '-'}`
       )
     );
 
@@ -110,7 +110,8 @@ class WebSocketService extends Component<Props> {
   }
 
   private formatLog(message: string): string {
-    return `${new Date().toLocaleTimeString()} : ${this.id} : ${message}`;
+    // ${new Date().toLocaleTimeString()} :
+    return `${this.id} : ${message}`;
   }
 
   private async connect(): Promise<void> {
@@ -162,13 +163,20 @@ class WebSocketService extends Component<Props> {
       this.webSocket.onmessage = (event) => {
         const messageData = JSON.parse(event.data);
         if (messageData.previousMessages) {
-          // Added functionality on $connect to load and send to the client previous chat messages from DynamoDB.
+          // Added functionality on $connect to load and send to the client previous chat messages and active connections.
           this.props.loadPreviousMessages(messageData.previousMessages);
+          this.props.setConnections(messageData.connections);
+          this.props.addMessage({
+            content: messageData.connections.map((conn: IConnection) => conn.username).join(', '),
+            sender: '$connect',
+          });
+        } else if (messageData.connections) {
+          this.props.setConnections(messageData.connections);
         } else {
           const newMessage: INewMessage = messageData;
-          console.log(JSON.stringify(newMessage));
+          // console.log(JSON.stringify(newMessage));
           this.props.addMessage(newMessage);
-          if (newMessage.sender !== '$connect')
+          if (newMessage.sender !== '$connect' && !newMessage.sender?.includes('AWS::Events::Rule'))
             toast(`${newMessage.content} , from ${newMessage.sender}`, { autoClose: Math.max(Math.min(newMessage.content.length * 75, 4000), 2000) });
           // notify(`${messageData.content}, from: ${messageData}`);
         }
@@ -199,9 +207,14 @@ class WebSocketService extends Component<Props> {
   }
 
   render() {
+    const { wsConnected, connections, lastIncomingMessageTimestamp } = this.props;
+    const connectionsList = lastIncomingMessageTimestamp + ' : ' + connections.map((conn) => `${conn.username} (${conn.connectionId})`).join(', ');
+
     return (
-      <div title={this.props.wsConnected ? 'Connected' : 'Disconnected'}>
-        <Network size={20} className={`network-icon ${this.props.wsConnected ? 'connected' : 'disconnected'}`} />
+      <div
+        title={wsConnected ? `Connected` : 'Disconnected'}
+        onClick={() => toast(connectionsList, { autoClose: Math.max(Math.min(connectionsList.length * 75, 4000), 2000) })}>
+        <Network size={20} className={`network-icon ${wsConnected ? 'connected' : 'disconnected'}`} />
       </div>
     );
   }
@@ -209,13 +222,16 @@ class WebSocketService extends Component<Props> {
 
 const mapStateToProps = (state: RootState) => ({
   jwtToken: state.auth.jwtToken,
-  wsConnected: state.wsConnected,
+  wsConnected: state.websockets.isConnected,
+  connections: state.websockets.connections,
+  lastIncomingMessageTimestamp: state.websockets.lastIncomingMessageTimestamp,
   chatId: state.msg.chatId,
   lastSentMessage: state.msg.lastSentMessage,
 });
 
 const mapDispatchToProps = {
   setWSConnected,
+  setConnections,
   loadPreviousMessages,
   addMessage,
 };

@@ -170,7 +170,7 @@ const selectColor = (sender: string | null) => {
 };
 
 const mapStateToProps = (state: RootState) => ({
-  wsConnected: state.wsConnected,
+  wsConnected: state.websockets.isConnected,
   messages: state.msg.messages,
   timeFilterVisible: state.timeFilterVisible,
   timeWindowDays: selectEffectiveTimeWindow(state),

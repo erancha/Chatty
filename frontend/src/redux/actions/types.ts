@@ -15,6 +15,17 @@ export interface AuthState {
   username: string | null;
 }
 
+export interface WebsocketsState {
+  isConnected: boolean;
+  connections: IConnection[];
+  lastIncomingMessageTimestamp: string;
+}
+
+export interface IConnection {
+  connectionId: string;
+  username: string | null;
+}
+
 export interface MessagesState {
   chatId: string;
   messages: IMessage[];
@@ -24,7 +35,7 @@ export interface MessagesState {
 export interface AppState {
   showOverview: boolean;
   auth: AuthState;
-  wsConnected: boolean;
+  websockets: WebsocketsState;
   msg: MessagesState;
   menuOpen: boolean;
   timeFilterVisible: boolean;

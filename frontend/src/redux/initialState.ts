@@ -8,7 +8,11 @@ const initialState: AppState = {
     jwtToken: null,
     username: null,
   },
-  wsConnected: false,
+  websockets: {
+    isConnected: false,
+    connections: [],
+    lastIncomingMessageTimestamp: '',
+  },
   msg: {
     chatId: 'global', //TODO: Implement private and group chats.
     messages: [],

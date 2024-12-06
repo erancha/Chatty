@@ -231,6 +231,14 @@ Resources:
       CompatibleRuntimes:
         - nodejs20.x
 
+  ConnectionsUsernamesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ../backend/websocket/layers/connections
+      CompatibleRuntimes:
+        - nodejs20.x
+      Description: Layer for collecting an array [{connection, username}].
+
   # ------------------------------------------------------------------------------
   # Lambda functions for websockets handling
   # ------------------------------------------------------------------------------
@@ -241,6 +249,7 @@ Resources:
       Handler: connect.handler
       Runtime: nodejs20.x
       Layers:
+        - !Ref ConnectionsUsernamesLayer
         - !Ref jsonwebtokenLayer
         - !Ref IoredisLayer
         - !Ref AwsSdkV3Layer
@@ -305,6 +314,7 @@ Resources:
       Handler: sendRandomMessage.handler
       Runtime: nodejs20.x
       Layers:
+        - !Ref ConnectionsUsernamesLayer
         - !Ref jsonwebtokenLayer
         - !Ref IoredisLayer
         - !Ref AwsSdkV3Layer
@@ -324,7 +334,7 @@ Resources:
   SendRandomMessageScheduleRule:
     Type: AWS::Events::Rule
     Properties:
-      ScheduleExpression: cron(0 8-22 * * ? *) # Every hour from 08:00 to 23:00
+      ScheduleExpression: cron(0/5 8-22 * * ? *) # Every 5 minutes from 08:00 to 22:00
       Targets:
         - Arn: !GetAtt SendRandomMessageFunction.Arn
           Id: 'SendRandomMessageFunction'

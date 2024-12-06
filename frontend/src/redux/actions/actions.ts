@@ -1,5 +1,5 @@
 import { Dispatch } from 'redux';
-import { INewMessage, IMessage } from './types';
+import { IConnection, INewMessage, IMessage } from './types';
 
 export const TOGGLE_OVERVIEW = 'TOGGLE_OVERVIEW'; // show or hide the overview.
 export const TOGGLE_MENU = 'TOGGLE_MENU'; // open or close the menu.
@@ -42,6 +42,18 @@ export interface ISetWSConnected {
 export const setWSConnected = (connected: boolean): ISetWSConnected => ({
   type: SET_WS_CONNECTED,
   payload: connected,
+});
+
+export const SET_CONNECTIONS = 'SET_CONNECTIONS';
+
+export interface ISetConnections {
+  type: typeof SET_CONNECTIONS;
+  payload: IConnection[];
+}
+
+export const setConnections = (connections: IConnection[]): ISetConnections => ({
+  type: SET_CONNECTIONS,
+  payload: connections,
 });
 
 // show or hide the time filter.
