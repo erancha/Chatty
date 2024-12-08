@@ -44,25 +44,30 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
     case TOGGLE_MENU:
       return { ...state, menuOpen: action.payload };
 
-    case SET_WS_CONNECTED:
+    case SET_WS_CONNECTED: {
+      const currentTimestamp = new Date();
       return {
         ...state,
         websockets: {
           ...state.websockets,
           isConnected: action.payload,
-          // connections: [],
-          // lastIncomingMessageTimestamp: action.payload ? new Date().toLocaleString('en-GB', options) : '',
+          lastConnectionsTimestamp: action.payload ? currentTimestamp.toLocaleString('en-GB', options) : '',
+          lastConnectionsTimestampISO: action.payload ? currentTimestamp.toISOString() : '',
         },
       };
-    case SET_CONNECTIONS:
+    }
+    case SET_CONNECTIONS: {
+      const currentTimestamp = new Date();
       return {
         ...state,
         websockets: {
           ...state.websockets,
-          // connections: action.payload,
-          // lastIncomingMessageTimestamp: action.payload ? new Date().toLocaleString('en-GB', options) : '',
+          connections: action.payload,
+          lastConnectionsTimestamp: action.payload ? currentTimestamp.toLocaleString('en-GB', options) : '',
+          lastConnectionsTimestampISO: action.payload ? currentTimestamp.toISOString() : '',
         },
       };
+    }
 
     // Authentication Actions
     case AUTH_LOGIN_SUCCESS:
@@ -70,7 +75,7 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
         ...state,
         auth: {
           isAuthenticated: true,
-          jwtToken: action.payload.jwtToken,
+          JWT: action.payload.JWT,
           username: action.payload.username,
         },
       };
@@ -79,7 +84,7 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
         ...state,
         auth: {
           isAuthenticated: false,
-          jwtToken: null,
+          JWT: null,
           username: null,
         },
       };
@@ -136,10 +141,10 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
   }
 };
 
-// const options: Intl.DateTimeFormatOptions = {
-//   hour: 'numeric',
-//   minute: 'numeric',
-//   hour12: false,
-// };
+const options: Intl.DateTimeFormatOptions = {
+  hour: 'numeric',
+  minute: 'numeric',
+  hour12: false,
+};
 
 export default rootReducer;

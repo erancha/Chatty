@@ -15,20 +15,11 @@ const CHAT_ID = 'global';
 exports.handler = async (event) => {
   try {
     const targetConnectionIds = await redisClient.smembers(`${STACK_NAME}:connections(${CHAT_ID})`);
-    console.log({ targetConnectionIds });
-    if (targetConnectionIds.length > 0) {
-      let message,
-        skipSavingToDB = false;
-      if (new Date().getMinutes() === 0) {
-        const record = await getRecordAroundRandomTimestamp('2024-11-29T15:25:10.631Z', '2024-11-29T15:25:15.076Z');
-        // console.log('Record Around Random Timestamp:', record);
-        message = { content: record.content, sender: `${STACK_NAME} : AWS::Events::Rule cron(* 8-23 * * ? *) ${new Date().getMinutes()}` };
-      } else {
-        message = { connections: await collectConnectionsAndUsernames(redisClient, STACK_NAME, targetConnectionIds) };
-        skipSavingToDB = true;
-      }
+    const sqsClient = new SQSClient({ region: process.env.APP_AWS_REGION });
 
-      const sqsClient = new SQSClient({ region: process.env.APP_AWS_REGION });
+    // Send all current connections to all connections every 5 minutes (ScheduleExpression: cron(* * * * ? *)):
+    if (targetConnectionIds.length > 0 && new Date().getMinutes() % 5 === 0) {
+      console.log({ targetConnectionIds });
       await sqsClient.send(
         new SendMessageCommand({
           QueueUrl: process.env.SQS_QUEUE_URL,
@@ -36,8 +27,25 @@ exports.handler = async (event) => {
           MessageBody: JSON.stringify({
             targetConnectionIds,
             chatId: CHAT_ID,
-            message,
-            skipSavingToDB,
+            message: { connections: await collectConnectionsAndUsernames(redisClient, STACK_NAME, targetConnectionIds) },
+            skipSavingToDB: true,
+          }),
+        })
+      );
+    }
+
+    // Randomize a message every 1 hour:
+    if (new Date().getMinutes() === 0) {
+      const record = await getRecordAroundRandomTimestamp('2024-11-29T15:25:10.631Z', '2024-11-29T15:25:15.076Z');
+      console.log(JSON.stringify(record.content));
+      await sqsClient.send(
+        new SendMessageCommand({
+          QueueUrl: process.env.SQS_QUEUE_URL,
+          MessageGroupId: 'Default', // Required for FIFO queues
+          MessageBody: JSON.stringify({
+            targetConnectionIds,
+            chatId: CHAT_ID,
+            message: { content: record.content, sender: `${STACK_NAME} : AWS::Events::Rule cron` },
           }),
         })
       );

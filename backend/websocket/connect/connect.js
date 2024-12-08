@@ -75,27 +75,28 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
       STACK_NAME,
       EXPIRATION_TIME
     );
-    console.log(JSON.stringify({ currentConnectionId, connectionIds, currentUserName, currentUserId }));
 
     // Load and send the previous chat messages to the client:
     const connections = await collectConnectionsAndUsernames(redisClient, STACK_NAME, connectionIds);
     const previousMessages = await loadPreviousChatMessages(currentChatId, currentUserName);
+    const messageBody = JSON.stringify({
+      targetConnectionIds: [currentConnectionId],
+      chatId: currentChatId,
+      message: {
+        connections,
+        previousMessages,
+      },
+      skipSavingToDB: true,
+    });
+    console.log(messageBody);
     const sqsClient = new SQSClient({ region: AWS_REGION });
-    const sqsParams = {
-      QueueUrl: SQS_QUEUE_URL,
-      MessageGroupId: 'Default', // Required for FIFO queues
-      MessageBody: JSON.stringify({
-        targetConnectionIds: [currentConnectionId],
-        chatId: currentChatId,
-        message: {
-          connections,
-          previousMessages,
-        },
-        skipSavingToDB: true,
-      }),
-    };
-
-    await sqsClient.send(new SendMessageCommand(sqsParams));
+    await sqsClient.send(
+      new SendMessageCommand({
+        QueueUrl: SQS_QUEUE_URL,
+        MessageGroupId: 'Default', // Required for FIFO queues
+        MessageBody: messageBody,
+      })
+    );
 
     return { statusCode: 200 };
   } catch (error) {

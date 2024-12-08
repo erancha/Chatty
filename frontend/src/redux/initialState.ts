@@ -5,13 +5,14 @@ const initialState: AppState = {
   showOverview: false,
   auth: {
     isAuthenticated: false,
-    jwtToken: null,
+    JWT: null,
     username: null,
   },
   websockets: {
     isConnected: false,
     connections: [],
-    lastIncomingMessageTimestamp: '',
+    lastConnectionsTimestamp: '',
+    lastConnectionsTimestampISO: '',
   },
   msg: {
     chatId: 'global', //TODO: Implement private and group chats.

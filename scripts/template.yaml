@@ -334,7 +334,7 @@ Resources:
   SendRandomMessageScheduleRule:
     Type: AWS::Events::Rule
     Properties:
-      ScheduleExpression: cron(0/5 8-22 * * ? *) # Every 5 minutes from 08:00 to 22:00
+      ScheduleExpression: cron(0/5 * * * ? *) # Every 5 minutes
       Targets:
         - Arn: !GetAtt SendRandomMessageFunction.Arn
           Id: 'SendRandomMessageFunction'

@@ -36,57 +36,59 @@ import 'react-toastify/dist/ReactToastify.css';
 
 type Props = ConnectedProps<typeof connector>;
 class WebSocketService extends Component<Props> {
-  private id: string;
   private webSocket: WebSocket | null = null;
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private readonly MAX_RECONNECT_ATTEMPTS = 3;
   private reconnectAttempts = 0;
   private reconnectDelay = 1000;
 
-  constructor(props: Props) {
-    super(props);
-    this.id = Math.random().toString(36).substring(2, 15);
-  }
-
   async componentDidMount() {
     try {
-      // console.log(
-      //   this.formatLog(
-      //     `WebSocketService.componentDidMount: this.props.wsConnected: ${this.props.wsConnected} , this.props.jwtToken: ${
-      //       this.props.jwtToken ? 'exists' : 'null'
-      //     }`
-      //   )
-      // );
+      this.logFormatted(
+        `wsConnected: ${this.props.wsConnected} , JWT: ${this.props.JWT?.substring(0, 10)} ` +
+          this.props.connections.map((conn: IConnection) => conn.username).join(', ')
+      );
       // Try connecting to the WebSocket server:
-      // if (!this.props.wsConnected && this.props.jwtToken) {
-      //   console.log(this.formatLog("'this.connect()' called from 'componentDidMount()'."));
+      // if (!this.props.wsConnected && this.props.JWT) {
+      //   this.logFormatted("'this.connect()' called from 'componentDidMount()'.");
       //   this.connect();
       // }
+
+      document.addEventListener('visibilitychange', this.handleVisibilityChange);
     } catch (err) {
       console.error('Error initializing WebSocket service:', err);
       this.props.setWSConnected(false);
     }
   }
 
+  handleVisibilityChange = () => {
+    // 'backend\websocket\messages\sendRandomMessage' sends the active connections every 5 minutes, during which lastConnectionsTimestamp* is saved in the redux store.
+    // In case the time elapsed since the last active connections message from the backend is higher than 5 minutes, the client tries to reconnect.
+    const checkTimeSinceLastConnectionsMessage = () => {
+      if (this.props.isAuthenticated) {
+        const currentTimeMS = new Date().getTime();
+        const lastConnectionTimeMS = new Date(this.props.lastConnectionsTimestampISO).getTime();
+        const differenceInMinutes = Math.floor((currentTimeMS - lastConnectionTimeMS) / 60000);
+        if (differenceInMinutes > 5) this.props.setWSConnected(false);
+      }
+    };
+
+    if (document.visibilityState === 'visible') {
+      checkTimeSinceLastConnectionsMessage();
+    }
+  };
+
   componentDidUpdate(prevProps: Props) {
-    console.log(
-      this.formatLog(
-        `WebSocketService.componentDidUpdate: wsConnected: ${this.props.wsConnected} , prevProps: ${prevProps.wsConnected}, jwtToken: ${
-          this.props.jwtToken ? 'v' : '-'
-        }, prevProps: ${prevProps.jwtToken ? 'v' : '-'}`
-      )
+    this.logFormatted(
+      `wsConnected: ${this.props.wsConnected} , prev: ${prevProps.wsConnected}, jwt: ${this.props.JWT?.substring(
+        0,
+        10
+      )}, prev: ${prevProps.JWT?.substring(0, 10)} , connected users: ` + this.props.connections.map((conn: IConnection) => conn.username).join(', ')
     );
+    // this.props.addMessage({ content: `this.props.lastConnectionsTimestamp: ${this.props.lastConnectionsTimestamp}`, sender: 'componentDidUpdate', });
 
-    if (!this.props.wsConnected || this.props.jwtToken !== prevProps.jwtToken) {
-      console.log(this.formatLog("'this.connect()' called from 'componentDidUpdate'."));
-      this.connect();
-    } else if (!this.props.wsConnected && prevProps.wsConnected) this.closeConnection();
-
-    // console.log(
-    //   this.formatLog(
-    //     `WebSocketService.componentDidUpdate: prevProps.lastSentMessage: ${prevProps.lastSentMessage} , this.props.lastSentMessage: ${this.props.lastSentMessage}`
-    //   )
-    // );
+    if (!this.props.wsConnected || this.props.JWT !== prevProps.JWT) this.connect();
+    else if (!this.props.wsConnected && prevProps.wsConnected) this.closeConnection();
 
     // If this is a new message, send it to websocket:
     if (this.props.lastSentMessage && this.props.lastSentMessage !== prevProps.lastSentMessage) {
@@ -109,15 +111,14 @@ class WebSocketService extends Component<Props> {
     this.cleanup();
   }
 
-  private formatLog(message: string): string {
-    // ${new Date().toLocaleTimeString()} :
-    return `${this.id} : ${message}`;
+  private logFormatted(message: string) {
+    console.log(`${new Date().toLocaleTimeString()} : ${message}`);
   }
 
   private async connect(): Promise<void> {
     if (!this.props.chatId) console.error("'chatId' is mandatory in the query string");
     else {
-      const url = `${appConfigData.WEBSOCKET_API_URL}?token=${this.props.jwtToken}&chatId=${this.props.chatId}`;
+      const url = `${appConfigData.WEBSOCKET_API_URL}?token=${this.props.JWT}&chatId=${this.props.chatId}`;
 
       // Reset the previous connection (if opened):
       if (this.reconnectTimeout) {
@@ -130,33 +131,33 @@ class WebSocketService extends Component<Props> {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Open the new connection:
-      console.log(this.formatLog(`Creating WebSocket connection with URL: ${url}`));
+      this.logFormatted(`Creating WebSocket connection with URL: ${url}`);
       this.webSocket = new WebSocket(url);
 
       this.webSocket.onopen = () => {
-        console.log(this.formatLog('** WebSocket connection opened **'));
+        this.logFormatted('** WebSocket connection opened **');
         this.props.setWSConnected(true);
         this.reconnectAttempts = 0;
         this.reconnectDelay = 1000;
       };
 
       this.webSocket.onclose = (event) => {
-        console.warn(this.formatLog(`** WebSocket connection closed **: ${JSON.stringify(event)}`));
+        this.logFormatted(`** WebSocket connection closed **: ${JSON.stringify(event)}`);
         this.props.setWSConnected(false);
 
         if (event.code === 1006 && ++this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
-          console.warn(this.formatLog(`Attempting to reconnect in ${this.reconnectDelay / 1000} seconds...`));
+          this.logFormatted(`Attempting to reconnect in ${this.reconnectDelay / 1000} seconds...`);
           this.reconnectTimeout = setTimeout(() => {
             this.reconnectDelay *= 2;
             this.props.setWSConnected(true);
           }, this.reconnectDelay);
         } else if (event.isTrusted && ++this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
           this.reconnectTimeout = setTimeout(() => {
-            console.warn(this.formatLog('Attempting to reconnect...'));
+            this.logFormatted('Attempting to reconnect...');
             this.props.setWSConnected(true);
           }, 1000);
         } else {
-          console.warn(this.formatLog('Maximum reconnection attempts reached or manual closure.'));
+          this.logFormatted('Maximum reconnection attempts reached or manual closure.');
         }
       };
 
@@ -167,7 +168,7 @@ class WebSocketService extends Component<Props> {
           this.props.loadPreviousMessages(messageData.previousMessages);
           this.props.setConnections(messageData.connections);
           this.props.addMessage({
-            content: messageData.connections.map((conn: IConnection) => conn.username).join(', '),
+            content: `Connected users: ${messageData.connections.map((conn: IConnection) => conn.username).join(', ')}`,
             sender: '$connect',
           });
         } else if (messageData.connections) {
@@ -183,7 +184,7 @@ class WebSocketService extends Component<Props> {
       };
 
       this.webSocket.onerror = (error) => {
-        console.error(this.formatLog('** WebSocket error: **'), error);
+        console.error('** WebSocket error: **', error);
         this.props.setWSConnected(false);
       };
     }
@@ -207,24 +208,27 @@ class WebSocketService extends Component<Props> {
   }
 
   render() {
-    const { wsConnected, connections, lastIncomingMessageTimestamp } = this.props;
-    const connectionsList = lastIncomingMessageTimestamp + ' : ' + connections.map((conn) => `${conn.username} (${conn.connectionId})`).join(', ');
+    const { wsConnected, connections, lastConnectionsTimestamp } = this.props;
+    const connectionsList = lastConnectionsTimestamp + ' : ' + connections.map((conn) => `${conn.username} (${conn.connectionId})`).join(', ');
 
     return (
       <div
-        title={wsConnected ? `Connected` : 'Disconnected'}
+        title={wsConnected ? `Connected: ${this.props.lastConnectionsTimestamp}` : 'Disconnected'}
         onClick={() => toast(connectionsList, { autoClose: Math.max(Math.min(connectionsList.length * 75, 4000), 2000) })}>
         <Network size={20} className={`network-icon ${wsConnected ? 'connected' : 'disconnected'}`} />
+        <span className='last-connections-timestamp'>{this.props.lastConnectionsTimestamp}</span>
       </div>
     );
   }
 }
 
 const mapStateToProps = (state: RootState) => ({
-  jwtToken: state.auth.jwtToken,
+  isAuthenticated: state.auth.isAuthenticated,
+  JWT: state.auth.JWT,
   wsConnected: state.websockets.isConnected,
   connections: state.websockets.connections,
-  lastIncomingMessageTimestamp: state.websockets.lastIncomingMessageTimestamp,
+  lastConnectionsTimestamp: state.websockets.lastConnectionsTimestamp,
+  lastConnectionsTimestampISO: state.websockets.lastConnectionsTimestampISO,
   chatId: state.msg.chatId,
   lastSentMessage: state.msg.lastSentMessage,
 });

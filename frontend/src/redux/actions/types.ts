@@ -11,14 +11,15 @@ export interface IMessage extends INewMessage {
 
 export interface AuthState {
   isAuthenticated: boolean;
-  jwtToken: string | null;
+  JWT: string | null;
   username: string | null;
 }
 
 export interface WebsocketsState {
   isConnected: boolean;
   connections: IConnection[];
-  lastIncomingMessageTimestamp: string;
+  lastConnectionsTimestamp: string; // for display: HH:MM
+  lastConnectionsTimestampISO: string; // for comparisons: Full ISO value.
 }
 
 export interface IConnection {

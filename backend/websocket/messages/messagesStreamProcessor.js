@@ -29,7 +29,7 @@ exports.handler = async (event) => {
   const tableName = event.Records[0].eventSourceARN.split(':')[5].split('/')[1];
 
   for (const record of event.Records) {
-    // console.log(`${tableName}: Stream record: ${JSON.stringify(record, null, 2)}`);
+    console.log(`${tableName}: Stream record: ${JSON.stringify(record)}`);
 
     if (record.eventName === 'INSERT') {
       const newItem = unmarshall(record.dynamodb.NewImage);

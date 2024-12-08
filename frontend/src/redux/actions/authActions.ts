@@ -9,16 +9,16 @@ export const AUTH_LOGOUT = 'AUTH_LOGOUT';
 // Action Interfaces
 interface AuthLoginSuccessAction {
   type: typeof AUTH_LOGIN_SUCCESS;
-  payload: { jwtToken: string; username: string };
+  payload: { JWT: string; username: string };
 }
 
 interface AuthLogoutAction {
   type: typeof AUTH_LOGOUT;
 }
 
-const authLoginSuccess = (jwtToken: string, username: string): AuthLoginSuccessAction => ({
+const authLoginSuccess = (JWT: string, username: string): AuthLoginSuccessAction => ({
   type: AUTH_LOGIN_SUCCESS,
-  payload: { jwtToken, username },
+  payload: { JWT, username },
 });
 const authLogout = (): AuthLogoutAction => ({
   type: AUTH_LOGOUT,

@@ -45,6 +45,9 @@
   color: red;
   scale: 150%;
 }
+.last-connections-timestamp {
+  font-size: x-small;
+}
 
 .text-button.toggle-overview {
   font-size: 0.8rem;
