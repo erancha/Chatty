@@ -6,7 +6,10 @@ const { collectConnectionsAndUsernames } = require('/opt/connections');
 
 const redisClient = new Redis(process.env.ELASTICACHE_REDIS_ADDRESS);
 
+const AWS_REGION = process.env.APP_AWS_REGION;
 const STACK_NAME = process.env.STACK_NAME;
+const MESSAGES_TABLE_NAME = process.env.MESSAGES_TABLE_NAME;
+const SQS_QUEUE_URL = process.env.SQS_QUEUE_URL;
 const CHAT_ID = 'global';
 
 //===========================================
@@ -15,14 +18,14 @@ const CHAT_ID = 'global';
 exports.handler = async (event) => {
   try {
     const targetConnectionIds = await redisClient.smembers(`${STACK_NAME}:connections(${CHAT_ID})`);
-    const sqsClient = new SQSClient({ region: process.env.APP_AWS_REGION });
+    const sqsClient = new SQSClient({ region: AWS_REGION });
 
     // Send all current connections to all connections every 5 minutes (ScheduleExpression: cron(* * * * ? *)):
     if (targetConnectionIds.length > 0 && new Date().getMinutes() % 5 === 0) {
       console.log({ targetConnectionIds });
       await sqsClient.send(
         new SendMessageCommand({
-          QueueUrl: process.env.SQS_QUEUE_URL,
+          QueueUrl: SQS_QUEUE_URL,
           MessageGroupId: 'Default', // Required for FIFO queues
           MessageBody: JSON.stringify({
             targetConnectionIds,
@@ -40,7 +43,7 @@ exports.handler = async (event) => {
       console.log(JSON.stringify(record.content));
       await sqsClient.send(
         new SendMessageCommand({
-          QueueUrl: process.env.SQS_QUEUE_URL,
+          QueueUrl: SQS_QUEUE_URL,
           MessageGroupId: 'Default', // Required for FIFO queues
           MessageBody: JSON.stringify({
             targetConnectionIds,
@@ -72,7 +75,7 @@ async function getRecordAroundRandomTimestamp(startTimestamp, endTimestamp) {
   try {
     const result = await dynamodbDocClient.send(
       new QueryCommand({
-        TableName: process.env.MESSAGES_TABLE_NAME,
+        TableName: MESSAGES_TABLE_NAME,
         IndexName: 'ChatIdUpdatedIndex',
         KeyConditionExpression: 'chatId = :chatId AND updatedAt BETWEEN :start AND :random',
         ExpressionAttributeValues: {

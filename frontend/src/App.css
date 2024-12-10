@@ -34,6 +34,31 @@
   }
 }
 
+.network-container {
+  display: grid;
+  row-gap: 5px;
+  column-gap: 0.5rem;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 100%;
+  max-height: 3rem;
+  margin-left: 0.5rem;
+}
+
+.network-container .left-column {
+  display: flex;
+  flex-direction: column;
+  place-content: flex-end;
+}
+
+.network-container .right-column {
+  display: flex;
+  flex-direction: column;
+  font-size: x-small;
+  margin: 2px;
+  padding: 2px 2px 2px 1rem;
+  overflow-y: auto;
+}
+
 .network-icon {
   vertical-align: middle;
   height: 0.9rem;
@@ -356,6 +381,17 @@
   .app-overview .header2 {
     margin: 2rem 0.5rem 1rem 0.5rem;
     max-width: 80%;
+  }
+
+  .header-container {
+    gap: 0.5rem;
+  }
+
+  .network-container {
+    column-gap: 2px;
+  }
+  .network-container .right-column {
+    font-size: xx-small;
   }
 
   .message-bubble {

@@ -18,6 +18,7 @@ export interface AuthState {
 export interface WebsocketsState {
   isConnected: boolean;
   connections: IConnection[];
+  showConnections: boolean;
   lastConnectionsTimestamp: string; // for display: HH:MM
   lastConnectionsTimestampISO: string; // for comparisons: Full ISO value.
 }

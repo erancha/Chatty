@@ -6,8 +6,9 @@ const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb'
 const { collectConnectionsAndUsernames } = require('/opt/connections');
 
 const redisClient = new Redis(process.env.ELASTICACHE_REDIS_ADDRESS);
-const STACK_NAME = process.env.STACK_NAME;
+
 const AWS_REGION = process.env.APP_AWS_REGION;
+const STACK_NAME = process.env.STACK_NAME;
 const MESSAGES_TABLE_NAME = process.env.MESSAGES_TABLE_NAME;
 const SQS_QUEUE_URL = process.env.SQS_QUEUE_URL;
 
@@ -80,8 +81,7 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
     const connections = await collectConnectionsAndUsernames(redisClient, STACK_NAME, connectionIds);
     const previousMessages = await loadPreviousChatMessages(currentChatId, currentUserName);
     const messageBody = JSON.stringify({
-      targetConnectionIds: [currentConnectionId],
-      chatId: currentChatId,
+      targetConnectionIds: connectionIds,
       message: {
         connections,
         previousMessages,

@@ -2,7 +2,7 @@ import React from 'react';
 import { connect, ConnectedProps } from 'react-redux';
 import { Component } from 'react';
 import { RootState } from '../redux/store/store';
-import { setWSConnected, setConnections, loadPreviousMessages, addMessage } from '../redux/actions/actions';
+import { setWSConnected, setConnections, toggleConnections, loadPreviousMessages, addMessage } from '../redux/actions/actions';
 import { Network } from 'lucide-react';
 import appConfigData from '../appConfig.json';
 import { IConnection, INewMessage } from 'redux/actions/types';
@@ -48,11 +48,6 @@ class WebSocketService extends Component<Props> {
         `wsConnected: ${this.props.wsConnected} , JWT: ${this.props.JWT?.substring(0, 10)} ` +
           this.props.connections.map((conn: IConnection) => conn.username).join(', ')
       );
-      // Try connecting to the WebSocket server:
-      // if (!this.props.wsConnected && this.props.JWT) {
-      //   this.logFormatted("'this.connect()' called from 'componentDidMount()'.");
-      //   this.connect();
-      // }
 
       document.addEventListener('visibilitychange', this.handleVisibilityChange);
     } catch (err) {
@@ -61,20 +56,32 @@ class WebSocketService extends Component<Props> {
     }
   }
 
+  // Handle change from hidden to visible:
   handleVisibilityChange = () => {
-    // 'backend\websocket\messages\sendRandomMessage' sends the active connections every 5 minutes, during which lastConnectionsTimestamp* is saved in the redux store.
-    // In case the time elapsed since the last active connections message from the backend is higher than 5 minutes, the client tries to reconnect.
-    const checkTimeSinceLastConnectionsMessage = () => {
-      if (this.props.isAuthenticated) {
-        const currentTimeMS = new Date().getTime();
-        const lastConnectionTimeMS = new Date(this.props.lastConnectionsTimestampISO).getTime();
-        const differenceInMinutes = Math.floor((currentTimeMS - lastConnectionTimeMS) / 60000);
-        if (differenceInMinutes > 5) this.props.setWSConnected(false);
-      }
-    };
-
     if (document.visibilityState === 'visible') {
-      checkTimeSinceLastConnectionsMessage();
+      if (this.props.wsConnected) {
+        try {
+          // Ping the websocket server:
+          this.webSocket?.send(
+            JSON.stringify({
+              action: 'SendMessage',
+              data: { ping: true },
+            })
+          );
+          // Wait for a response for few seconds. If this.props.lastConnectionsTimestampISO didn't change (i.e. not response was received), invalidate the connection (i.e. cause the client to reconnect).
+          const MAX_TIME_TO_WAIT_FOR_PING_RESPONSE_MS = 5000;
+          const LAST_CONNECTIONS_TIMESTAMP_ISO = this.props.lastConnectionsTimestampISO;
+          setTimeout(() => {
+            if (this.props.lastConnectionsTimestampISO === LAST_CONNECTIONS_TIMESTAMP_ISO) {
+              console.warn('No response to ping, setWSConnected --> false ...');
+              this.props.setWSConnected(false);
+            }
+          }, MAX_TIME_TO_WAIT_FOR_PING_RESPONSE_MS);
+        } catch (error) {
+          toast.error(`Failed to send a message to the websocket server: ${error}`);
+          this.props.setWSConnected(false);
+        }
+      }
     }
   };
 
@@ -102,7 +109,7 @@ class WebSocketService extends Component<Props> {
           })
         );
       } catch (error) {
-        console.error(error);
+        toast.error(`Failed to send a message to the websocket server: ${error}`);
       }
     }
   }
@@ -167,12 +174,10 @@ class WebSocketService extends Component<Props> {
           // Added functionality on $connect to load and send to the client previous chat messages and active connections.
           this.props.loadPreviousMessages(messageData.previousMessages);
           this.props.setConnections(messageData.connections);
-          this.props.addMessage({
-            content: `Connected users: ${messageData.connections.map((conn: IConnection) => conn.username).join(', ')}`,
-            sender: '$connect',
-          });
         } else if (messageData.connections) {
           this.props.setConnections(messageData.connections);
+        } else if (messageData.ping) {
+          this.props.setConnections(null);
         } else {
           const newMessage: INewMessage = messageData;
           // console.log(JSON.stringify(newMessage));
@@ -208,15 +213,25 @@ class WebSocketService extends Component<Props> {
   }
 
   render() {
-    const { wsConnected, connections, lastConnectionsTimestamp } = this.props;
-    const connectionsList = lastConnectionsTimestamp + ' : ' + connections.map((conn) => `${conn.username} (${conn.connectionId})`).join(', ');
-
     return (
       <div
-        title={wsConnected ? `Connected: ${this.props.lastConnectionsTimestamp}` : 'Disconnected'}
-        onClick={() => toast(connectionsList, { autoClose: Math.max(Math.min(connectionsList.length * 75, 4000), 2000) })}>
-        <Network size={20} className={`network-icon ${wsConnected ? 'connected' : 'disconnected'}`} />
-        <span className='last-connections-timestamp'>{this.props.lastConnectionsTimestamp}</span>
+        title={this.props.wsConnected ? `Connected, last connections update on ${this.props.lastConnectionsTimestamp}` : 'Disconnected'}
+        onClick={() => this.props.toggleConnections(!this.props.showConnections)}>
+        <div className='network-container'>
+          <div className='left-column'>
+            <Network size={20} className={`network-icon ${this.props.wsConnected ? 'connected' : 'disconnected'}`} />
+            <span className='last-connections-timestamp'>{this.props.lastConnectionsTimestamp}</span>
+          </div>
+          <ul className='right-column'>
+            {this.props.connections &&
+              this.props.showConnections &&
+              this.props.connections.map((item: IConnection) => (
+                <li key={item.connectionId} className='username'>
+                  {item.username}
+                </li>
+              ))}
+          </ul>
+        </div>
       </div>
     );
   }
@@ -227,6 +242,7 @@ const mapStateToProps = (state: RootState) => ({
   JWT: state.auth.JWT,
   wsConnected: state.websockets.isConnected,
   connections: state.websockets.connections,
+  showConnections: state.websockets.showConnections,
   lastConnectionsTimestamp: state.websockets.lastConnectionsTimestamp,
   lastConnectionsTimestampISO: state.websockets.lastConnectionsTimestampISO,
   chatId: state.msg.chatId,
@@ -236,6 +252,7 @@ const mapStateToProps = (state: RootState) => ({
 const mapDispatchToProps = {
   setWSConnected,
   setConnections,
+  toggleConnections,
   loadPreviousMessages,
   addMessage,
 };

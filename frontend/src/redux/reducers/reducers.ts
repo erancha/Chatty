@@ -3,6 +3,7 @@ import {
   TOGGLE_MENU,
   SET_WS_CONNECTED,
   SET_CONNECTIONS,
+  TOGGLE_CONNECTIONS,
   LOAD_PREVIOUS_MESSAGES,
   ADD_MESSAGE,
   SEND_MESSAGE,
@@ -13,6 +14,7 @@ import {
   IToggleMenu,
   ISetWSConnected,
   ISetConnections,
+  IToggleConnections,
   ILoadPreviousMessages,
   IAddMessage,
   ISendMessage,
@@ -30,6 +32,7 @@ type AppAction =
   | IToggleMenu
   | ISetWSConnected
   | ISetConnections
+  | IToggleConnections
   | ILoadPreviousMessages
   | IAddMessage
   | ISendMessage
@@ -62,12 +65,20 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
         ...state,
         websockets: {
           ...state.websockets,
-          connections: action.payload,
-          lastConnectionsTimestamp: action.payload ? currentTimestamp.toLocaleString('en-GB', options) : '',
-          lastConnectionsTimestampISO: action.payload ? currentTimestamp.toISOString() : '',
+          connections: action.payload ? action.payload : state.websockets.connections,
+          lastConnectionsTimestamp: currentTimestamp.toLocaleString('en-GB', options),
+          lastConnectionsTimestampISO: currentTimestamp.toISOString(),
         },
       };
     }
+    case TOGGLE_CONNECTIONS:
+      return {
+        ...state,
+        websockets: {
+          ...state.websockets,
+          showConnections: action.payload,
+        },
+      };
 
     // Authentication Actions
     case AUTH_LOGIN_SUCCESS:

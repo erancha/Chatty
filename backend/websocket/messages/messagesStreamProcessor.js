@@ -3,6 +3,8 @@ const Redis = require('ioredis');
 
 const redisClient = new Redis(process.env.ELASTICACHE_REDIS_ADDRESS);
 
+const STACK_NAME = process.env.STACK_NAME;
+
 // Lua script
 const luaScript = `
 local chatMessagesKey = ARGV[1]
@@ -24,6 +26,9 @@ end
 return length
 `;
 
+//===========================================
+// handler:
+//===========================================
 exports.handler = async (event) => {
   // Extract table name from the event records (assuming all records are from the same table)
   const tableName = event.Records[0].eventSourceARN.split(':')[5].split('/')[1];
@@ -33,7 +38,7 @@ exports.handler = async (event) => {
 
     if (record.eventName === 'INSERT') {
       const newItem = unmarshall(record.dynamodb.NewImage);
-      const chatMessagesKey = `${process.env.STACK_NAME}:messages(${newItem.chatId})`;
+      const chatMessagesKey = `${STACK_NAME}:messages(${newItem.chatId})`;
 
       // Execute the Lua script to insert the new item and manage the list
       const maxItems = 100; // Set your desired limit
@@ -50,6 +55,9 @@ exports.handler = async (event) => {
         }),
         maxItems
       );
+    } else if (record.eventName === 'MODIFY' || record.eventName === 'REMOVE') {
+      // Invalidate the cache:
+      redisClient.del(`${STACK_NAME}:messages(global)`); // modifiedItem.chatId
     }
   }
 

@@ -4,20 +4,22 @@ const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
 const crypto = require('crypto');
 
 const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const WEBSOCKET_API_URL = process.env.WEBSOCKET_API_URL.replace(/^wss/, 'https');
+const MESSAGES_TABLE_NAME = process.env.MESSAGES_TABLE_NAME;
 
-/*
-This handler:
-  1. Extracts messages from an SQS queue.
-  2. Sends the extracted messages to WebSocket clients, on connection ids extracted from the message.
-  3. Writes the messages to a dynamo db table. //TODO: This functionality is planned to be isolated to another lambda function, which will subscribe to a new SNS topic (refer to the readme.md file).
-*/
+//======================================================================================================
+// Handler:
+//   1. Extracts messages from an SQS queue.
+//   2. Sends the extracted messages to WebSocket clients, on connection ids extracted from the message.
+//   3. Writes the messages to a dynamo db table. //TODO: This functionality is planned to be isolated to another lambda function, which will subscribe to a new SNS topic (refer to the readme.md file).
+//======================================================================================================
 exports.handler = async (event) => {
   // console.log(JSON.stringify(event, null, 2));
 
   try {
     const appGatewayClient = new ApiGatewayManagementApiClient({
       apiVersion: '2018-11-29',
-      endpoint: process.env.WEBSOCKET_API_URL.replace(/^wss/, 'https'),
+      endpoint: WEBSOCKET_API_URL.replace(/^wss/, 'https'),
     });
 
     const recordsExtractedFromQueue = event.Records;
@@ -49,7 +51,7 @@ exports.handler = async (event) => {
           //TODO: This functionality is planned to be isolated to another lambda function, which will subscribe to a new SNS topic (refer to the readme.md file).
           await docClient.send(
             new PutCommand({
-              TableName: process.env.MESSAGES_TABLE_NAME,
+              TableName: MESSAGES_TABLE_NAME,
               Item: {
                 id: crypto.randomUUID(),
                 chatId: extractedRecord.chatId,

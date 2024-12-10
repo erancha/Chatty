@@ -11,6 +11,7 @@ const initialState: AppState = {
   websockets: {
     isConnected: false,
     connections: [],
+    showConnections: true,
     lastConnectionsTimestamp: '',
     lastConnectionsTimestampISO: '',
   },
