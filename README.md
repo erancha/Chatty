@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-Chatty is a serverless chat application built with AWS, React, and WebSockets.
+Chatty is a serverless chat application built with AWS, React, and WebSockets.  
 The application is available online at https://d2gp7j2s0byyu1.cloudfront.net.
 
 ## 2. Architecture Components
