@@ -2,28 +2,29 @@ const { unmarshall } = require('@aws-sdk/util-dynamodb');
 const Redis = require('ioredis');
 
 const redisClient = new Redis(process.env.ELASTICACHE_REDIS_ADDRESS);
-
 const STACK_NAME = process.env.STACK_NAME;
 
 // Lua script
 const luaScript = `
-local chatMessagesKey = ARGV[1]
-local newItem = ARGV[2]
-local maxItems = tonumber(ARGV[3])
+local STACK_NAME = ARGV[1]
+local chatId = ARGV[2]
+local newItem = ARGV[3]
+local maxItems = tonumber(ARGV[4])
 
--- Insert the new item at the beginning of the list
-redis.call('LPUSH', chatMessagesKey, newItem)
+local chatMessagesKey = STACK_NAME .. ":messages(" .. chatId .. ")"
 
--- Get the current length of the list
-local length = redis.call('LLEN', chatMessagesKey)
+-- Check if the cache exists (otherwise the new item will not be inserted, and previous messages will be loaded when the first subsequent client will authenticate).
+if redis.call('EXISTS', chatMessagesKey) > 0 then
+  -- Insert the new item at the beginning of the list
+  redis.call('LPUSH', chatMessagesKey, newItem)
 
--- Remove the last item if the length exceeds the maxItems limit
-if length > maxItems then
-    redis.call('RPOP', chatMessagesKey)
-    length = length - 1
+  -- Remove the last item if the current length (including the new item) exceeds the maxItems limit
+  local length = redis.call('LLEN', chatMessagesKey)
+  if length > maxItems then
+      redis.call('RPOP', chatMessagesKey)
+      length = length - 1
+  end
 end
-
-return length
 `;
 
 //===========================================
@@ -38,14 +39,14 @@ exports.handler = async (event) => {
 
     if (record.eventName === 'INSERT') {
       const newItem = unmarshall(record.dynamodb.NewImage);
-      const chatMessagesKey = `${STACK_NAME}:messages(${newItem.chatId})`;
 
       // Execute the Lua script to insert the new item and manage the list
       const maxItems = 100; // Set your desired limit
       await redisClient.eval(
         luaScript,
         0,
-        chatMessagesKey,
+        newItem.chatId,
+        STACK_NAME,
         JSON.stringify({
           id: newItem.id,
           timestamp: new Date(newItem.updatedAt).getTime(),
@@ -57,7 +58,9 @@ exports.handler = async (event) => {
       );
     } else if (record.eventName === 'MODIFY' || record.eventName === 'REMOVE') {
       // Invalidate the cache:
-      redisClient.del(`${STACK_NAME}:messages(global)`); // modifiedItem.chatId
+      const chatId = 'global'; // record.eventName === 'MODIFY' ? unmarshall(record.dynamodb.NewImage).chatId : unmarshall(record.dynamodb.OldImage).chatId;
+      const chatMessagesKey = `${STACK_NAME}:messages(${chatId})`;
+      await redisClient.del(chatMessagesKey);
     }
   }
 
