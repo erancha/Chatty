@@ -22,7 +22,6 @@ if redis.call('EXISTS', chatMessagesKey) > 0 then
   local length = redis.call('LLEN', chatMessagesKey)
   if length > maxItems then
       redis.call('RPOP', chatMessagesKey)
-      length = length - 1
   end
 end
 `;
@@ -34,35 +33,39 @@ exports.handler = async (event) => {
   // Extract table name from the event records (assuming all records are from the same table)
   const tableName = event.Records[0].eventSourceARN.split(':')[5].split('/')[1];
 
-  for (const record of event.Records) {
-    // console.log(`${tableName}: Stream record: ${JSON.stringify(record)}`);
+  try {
+    for (const record of event.Records) {
+      // console.log(`${tableName}: Stream record: ${JSON.stringify(record)}`);
 
-    if (record.eventName === 'INSERT') {
-      const newItem = unmarshall(record.dynamodb.NewImage);
+      if (record.eventName === 'INSERT') {
+        const newItem = unmarshall(record.dynamodb.NewImage);
 
-      // Execute the Lua script to insert the new item and manage the list
-      const maxItems = 100; // Set your desired limit
-      await redisClient.eval(
-        luaScript,
-        0,
-        newItem.chatId,
-        STACK_NAME,
-        JSON.stringify({
-          id: newItem.id,
-          timestamp: new Date(newItem.updatedAt).getTime(),
-          content: newItem.content,
-          sender: newItem.sender,
-          viewed: true,
-        }),
-        maxItems
-      );
-    } else if (record.eventName === 'MODIFY' || record.eventName === 'REMOVE') {
-      // Invalidate the cache:
-      const chatId = 'global'; // record.eventName === 'MODIFY' ? unmarshall(record.dynamodb.NewImage).chatId : unmarshall(record.dynamodb.OldImage).chatId;
-      const chatMessagesKey = `${STACK_NAME}:messages(${chatId})`;
-      await redisClient.del(chatMessagesKey);
+        // Execute the Lua script to insert the new item and manage the list
+        await redisClient.eval(
+          luaScript,
+          0,
+          STACK_NAME,
+          newItem.chatId,
+          JSON.stringify({
+            id: newItem.id,
+            timestamp: new Date(newItem.updatedAt).getTime(),
+            content: newItem.content,
+            sender: newItem.sender,
+            viewed: true,
+          }),
+          100 // max items
+        );
+      } else if (record.eventName === 'MODIFY' || record.eventName === 'REMOVE') {
+        // Invalidate the cache:
+        const chatId = 'global'; // record.eventName === 'MODIFY' ? unmarshall(record.dynamodb.NewImage).chatId : unmarshall(record.dynamodb.OldImage).chatId;
+        const chatMessagesKey = `${STACK_NAME}:messages(${chatId})`;
+        await redisClient.del(chatMessagesKey);
+      }
     }
-  }
 
-  return { statusCode: 200, body: 'Successfully processed DynamoDB Stream records' };
+    return { statusCode: 200, body: 'Successfully processed DynamoDB Stream records' };
+  } catch (error) {
+    console.error(`${JSON.stringify(event)} : `, error);
+    return { statusCode: 500, body: JSON.stringify({ error: 'Internal Server Error' }) };
+  }
 };
