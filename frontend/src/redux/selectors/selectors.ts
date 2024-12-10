@@ -3,7 +3,7 @@ import { AppState } from '../actions/types';
 import { DEFAULT_TIME_WINDOW_DAYS } from '../constants';
 
 // Selector to get the timeWindowDays from state
-export const selectTimeWindow = (state: AppState) => state.timeWindowDays;
+export const selectTimeWindow = (state: AppState) => state.mnu.timeWindowDays;
 
 // Create a selector that returns timeWindowDays or a default value
 export const selectEffectiveTimeWindow = createSelector([selectTimeWindow], (timeWindowDays) =>

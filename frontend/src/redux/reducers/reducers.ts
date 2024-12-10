@@ -42,11 +42,6 @@ type AppAction =
 
 const rootReducer = (state = initialState, action: AppAction): AppState => {
   switch (action.type) {
-    case TOGGLE_OVERVIEW:
-      return { ...state, showOverview: action.payload };
-    case TOGGLE_MENU:
-      return { ...state, menuOpen: action.payload };
-
     case SET_WS_CONNECTED: {
       const currentTimestamp = new Date();
       return {
@@ -100,10 +95,14 @@ const rootReducer = (state = initialState, action: AppAction): AppState => {
         },
       };
 
+    case TOGGLE_OVERVIEW:
+      return { ...state, mnu: { ...state.mnu, showOverview: action.payload } };
+    case TOGGLE_MENU:
+      return { ...state, mnu: { ...state.mnu, menuOpen: action.payload } };
     case TOGGLE_TIME_FILTER:
-      return { ...state, timeFilterVisible: action.payload };
+      return { ...state, mnu: { ...state.mnu, timeFilterVisible: action.payload } };
     case SET_TIME_WINDOW:
-      return { ...state, timeWindowDays: action.payload };
+      return { ...state, mnu: { ...state.mnu, timeWindowDays: action.payload } };
 
     case LOAD_PREVIOUS_MESSAGES:
       return {

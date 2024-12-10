@@ -1,20 +1,32 @@
-export interface INewMessage {
-  content: string;
-  sender: string | null;
+export interface AppState {
+  mnu: MenuState;
+  auth: AuthState;
+  websockets: WebsocketsState;
+  msg: MessagesState;
 }
 
-export interface IMessage extends INewMessage {
-  timestamp: number;
-  viewed: boolean;
-  id: string;
+//===============
+// Menu
+//===============
+export interface MenuState {
+  showOverview: boolean;
+  menuOpen: boolean;
+  timeFilterVisible: boolean;
+  timeWindowDays: number | null;
 }
 
+//===============
+// Authentication
+//===============
 export interface AuthState {
   isAuthenticated: boolean;
   JWT: string | null;
   username: string | null;
 }
 
+//===============
+// WebSockets
+//===============
 export interface WebsocketsState {
   isConnected: boolean;
   connections: IConnection[];
@@ -28,18 +40,22 @@ export interface IConnection {
   username: string | null;
 }
 
+//===============
+// Messages
+//===============
 export interface MessagesState {
   chatId: string;
   messages: IMessage[];
   lastSentMessage: string;
 }
 
-export interface AppState {
-  showOverview: boolean;
-  auth: AuthState;
-  websockets: WebsocketsState;
-  msg: MessagesState;
-  menuOpen: boolean;
-  timeFilterVisible: boolean;
-  timeWindowDays: number | null;
+export interface INewMessage {
+  content: string;
+  sender: string | null;
+}
+
+export interface IMessage extends INewMessage {
+  timestamp: number;
+  viewed: boolean;
+  id: string;
 }

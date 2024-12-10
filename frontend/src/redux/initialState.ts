@@ -2,7 +2,6 @@ import { AppState } from './actions/types';
 import { DEFAULT_TIME_WINDOW_DAYS } from './constants';
 
 const initialState: AppState = {
-  showOverview: false,
   auth: {
     isAuthenticated: false,
     JWT: null,
@@ -20,9 +19,12 @@ const initialState: AppState = {
     messages: [],
     lastSentMessage: '',
   },
-  menuOpen: false,
-  timeFilterVisible: false,
-  timeWindowDays: DEFAULT_TIME_WINDOW_DAYS,
+  mnu: {
+    showOverview: false,
+    menuOpen: false,
+    timeFilterVisible: false,
+    timeWindowDays: DEFAULT_TIME_WINDOW_DAYS,
+  },
 };
 
 export default initialState;

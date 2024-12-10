@@ -72,7 +72,7 @@ class AppComponent extends React.Component<AppProps & { auth: AuthContextProps }
 }
 
 const mapStateToProps = (state: AppState) => ({
-  showOverview: state.showOverview,
+  showOverview: state.mnu.showOverview,
 });
 
 const mapDispatchToProps = {

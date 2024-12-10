@@ -98,9 +98,9 @@ class ReduxConnectedMenu extends React.Component<MenuProps & { auth: AuthContext
 }
 
 const mapStateToProps = (state: AppState) => ({
-  showOverview: state.showOverview,
-  menuOpen: state.menuOpen,
-  timeFilterVisible: state.timeFilterVisible,
+  showOverview: state.mnu.showOverview,
+  menuOpen: state.mnu.menuOpen,
+  timeFilterVisible: state.mnu.timeFilterVisible,
   isAuthenticated: state.auth.isAuthenticated,
   authenticatedUsername: state.auth.username,
 });
