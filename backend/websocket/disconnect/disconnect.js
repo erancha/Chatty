@@ -45,7 +45,7 @@ end
         message: { connections: await collectConnectionsAndUsernames(redisClient, STACK_NAME, updatedConnectionIds) },
         skipSavingToDB: true,
       });
-      console.log(messageBody);
+      // console.log(messageBody);
       const sqsClient = new SQSClient({ region: AWS_REGION });
       await sqsClient.send(
         new SendMessageCommand({

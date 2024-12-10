@@ -14,8 +14,6 @@ const MESSAGES_TABLE_NAME = process.env.MESSAGES_TABLE_NAME;
 //   3. Writes the messages to a dynamo db table. //TODO: This functionality is planned to be isolated to another lambda function, which will subscribe to a new SNS topic (refer to the readme.md file).
 //======================================================================================================
 exports.handler = async (event) => {
-  // console.log(JSON.stringify(event, null, 2));
-
   try {
     const appGatewayClient = new ApiGatewayManagementApiClient({
       apiVersion: '2018-11-29',
@@ -26,14 +24,13 @@ exports.handler = async (event) => {
     await Promise.all(
       recordsExtractedFromQueue.map(async (record) => {
         const extractedRecord = JSON.parse(record.body);
-        console.log(`Extracted record: ${JSON.stringify(extractedRecord)}`);
+        // console.log(`Extracted record: ${JSON.stringify(extractedRecord)}`);
 
         // Send the message to all connected clients excluding the sender:
         for (const connectionId of extractedRecord.targetConnectionIds) {
           if (connectionId !== extractedRecord.senderConnectionId) {
             try {
               const jsonMessage = JSON.stringify(extractedRecord.message);
-              // console.log(`Sending a message on connection: '${connectionId}' : ${jsonMessage}`);
               await appGatewayClient.send(
                 new PostToConnectionCommand({
                   ConnectionId: connectionId,

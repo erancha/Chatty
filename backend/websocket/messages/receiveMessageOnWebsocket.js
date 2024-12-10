@@ -13,7 +13,6 @@ const SQS_QUEUE_URL = process.env.SQS_QUEUE_URL;
 // 3. Insert the prepared message into a queue.
 //======================================================================================================
 exports.handler = async (event) => {
-  // console.log(JSON.stringify(event, null, 2));
   const senderConnectionId = event.requestContext.connectionId;
   const incomingData = JSON.parse(event.body).data;
 
@@ -59,7 +58,7 @@ return {userName, chatId, chatConnectionIds}
     };
 
     try {
-      console.log(`Inserting a message to the queue: ${sqsParams.MessageBody}`);
+      // console.log(`Inserting a message to the queue: ${sqsParams.MessageBody}`);
       await sqsClient.send(new SendMessageCommand(sqsParams));
     } catch (error) {
       console.error(`Error sending SQS for connectionId '${senderConnectionId}':`, error);

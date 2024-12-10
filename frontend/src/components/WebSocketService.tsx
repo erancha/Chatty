@@ -1,4 +1,3 @@
-import React from 'react';
 import { connect, ConnectedProps } from 'react-redux';
 import { Component } from 'react';
 import { RootState } from '../redux/store/store';
@@ -8,31 +7,6 @@ import appConfigData from '../appConfig.json';
 import { IConnection, INewMessage } from 'redux/actions/types';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
-// const notify = (notificationText: string) => {
-//   // Check if the browser supports notifications
-//   if (!('Notification' in window)) {
-//     alert('This browser does not support desktop notification.');
-//     return;
-//   }
-
-//   // Check for permission
-//   Notification.requestPermission().then((permission) => {
-//     if (permission === 'granted') {
-//       const notification = new Notification('Chatty', {
-//         body: notificationText,
-//       });
-
-//       notification.onclick = () => {
-//         console.log('Notification clicked!');
-//       };
-//     } else if (permission === 'denied') {
-//       alert('Notification permission denied. Please enable notifications.');
-//     } else {
-//       alert('Notification permission dismissed. Please check your settings.');
-//     }
-//   });
-// };
 
 type Props = ConnectedProps<typeof connector>;
 class WebSocketService extends Component<Props> {
@@ -119,7 +93,7 @@ class WebSocketService extends Component<Props> {
   }
 
   private logFormatted(message: string) {
-    console.log(`${new Date().toLocaleTimeString()} : ${message}`);
+    // console.log(`${new Date().toLocaleTimeString()} : ${message}`);
   }
 
   private async connect(): Promise<void> {
@@ -180,7 +154,6 @@ class WebSocketService extends Component<Props> {
           this.props.setConnections(null);
         } else {
           const newMessage: INewMessage = messageData;
-          // console.log(JSON.stringify(newMessage));
           this.props.addMessage(newMessage);
           if (newMessage.sender !== '$connect' && !newMessage.sender?.includes('AWS::Events::Rule'))
             toast(`${newMessage.content} , from ${newMessage.sender}`, { autoClose: Math.max(Math.min(newMessage.content.length * 75, 4000), 2000) });

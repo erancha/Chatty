@@ -16,8 +16,6 @@ const SQS_QUEUE_URL = process.env.SQS_QUEUE_URL;
 // $connect handler:
 //===========================================
 exports.handler = async (event) => {
-  // console.log(JSON.stringify(event, null, 3));
-
   // Extract JWT token and chatId from the query string:
   let currentJwtToken, currentChatId;
   if (event.queryStringParameters && event.queryStringParameters.token) {
@@ -36,7 +34,6 @@ exports.handler = async (event) => {
   if (!decodedToken || !decodedToken.sub) throw new Error('Invalid token: Missing user id (sub)');
 
   // Extract user id (sub) and user name from the token
-  // console.log(JSON.stringify(decodedToken, null, 3));
   const currentConnectionId = event.requestContext.connectionId;
   const currentUserId = decodedToken.sub;
   const currentUserName = decodedToken.name;
@@ -88,7 +85,7 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
       },
       skipSavingToDB: true,
     });
-    console.log(messageBody);
+    // console.log(messageBody);
     const sqsClient = new SQSClient({ region: AWS_REGION });
     await sqsClient.send(
       new SendMessageCommand({
@@ -144,16 +141,10 @@ async function loadPreviousChatMessages(currentChatId, currentUserName) {
     // Insert the previous chat messages into Redis:
     const previousMessagesStringifiedItems = previousChatMessages.map((message) => JSON.stringify(message));
     await redisClient.rpush(chatMessagesKey, ...previousMessagesStringifiedItems);
-
-    // Example of removing the last item and inserting a new item at the beginning
-    // const newMessage = { /* your new message object */ }; // Define your new message here
-    // await redisClient.rpop(redisKey); // Remove the last item
-    // await redisClient.lpush(redisKey, JSON.stringify(newMessage)); // Insert the new item at the beginning
   }
 
   // Nullify the sender attribute for records with the same sender as the current username (as done for new messages by the current user):
   previousChatMessages = previousChatMessages.map((message) => {
-    // console.log(message, currentUserName);
     return {
       ...message,
       sender: message.sender !== currentUserName ? message.sender : null,
@@ -161,7 +152,6 @@ async function loadPreviousChatMessages(currentChatId, currentUserName) {
   });
 
   const elapsedTime = Date.now() - startTime;
-  // console.log(`loadPreviousChatMessages -> ${previousChatMessages.length} items, elapsed time: ${elapsedTime} ms`);
 
   return previousChatMessages;
 }

@@ -22,7 +22,7 @@ exports.handler = async (event) => {
 
     // Send all current connections to all connections every 5 minutes (ScheduleExpression: cron(* * * * ? *)):
     if (targetConnectionIds.length > 0 && new Date().getMinutes() % 5 === 0) {
-      console.log({ targetConnectionIds });
+      // console.log({ targetConnectionIds });
       await sqsClient.send(
         new SendMessageCommand({
           QueueUrl: SQS_QUEUE_URL,
@@ -40,7 +40,7 @@ exports.handler = async (event) => {
     // Randomize a message every 1 hour:
     if (new Date().getMinutes() === 0) {
       const record = await getRecordAroundRandomTimestamp('2024-11-29T15:25:10.631Z', '2024-11-29T15:25:15.076Z');
-      console.log(JSON.stringify(record.content));
+      // console.log(JSON.stringify(record.content));
       await sqsClient.send(
         new SendMessageCommand({
           QueueUrl: SQS_QUEUE_URL,
