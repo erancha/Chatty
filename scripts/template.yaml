@@ -365,10 +365,14 @@ Resources:
       VpcId: !Ref ExistingVpcId
       SecurityGroupIngress: []
       SecurityGroupEgress:
-        - IpProtocol: -1 # tcp   TODO: Too permissive
-          # FromPort: 6379 # Redis
-          # ToPort: 6379
-          CidrIp: 0.0.0.0/0 # TODO: Adjust as necessary to limit access: !Ref VpcCidrBlock
+        - IpProtocol: tcp
+          FromPort: 6379 # redis
+          ToPort: 6379
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443 # DynamoDB and SQS
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
 
   WebSocketLambdaRole:
     Type: AWS::IAM::Role
