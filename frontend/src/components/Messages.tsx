@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, createRef } from 'react';
 import { connect } from 'react-redux';
 import { RootState } from '../redux/store/store';
 import { IMessage } from '../redux/store/types';
@@ -6,7 +6,7 @@ import { selectEffectiveTimeWindow } from '../redux/store/selectors';
 import { setTimeWindow } from '../redux/mnu/actions';
 import { markMessageViewed, sendMessage } from '../redux/msg/actions';
 import ReactMarkdown from 'react-markdown';
-import { Send } from 'lucide-react';
+import { SendHorizontal } from 'lucide-react';
 import { ToastContainer } from 'react-toastify';
 import '../App.css';
 
@@ -36,6 +36,7 @@ const options: Intl.DateTimeFormatOptions = {
 
 class Messages extends Component<MessagesProps, MsgState> {
   private intervalId: NodeJS.Timeout | null = null;
+  private newMessageInputRef = createRef<HTMLTextAreaElement>();
 
   constructor(props: MessagesProps) {
     super(props);
@@ -48,10 +49,18 @@ class Messages extends Component<MessagesProps, MsgState> {
   }
 
   componentDidMount() {
+    setTimeout(() => this.newMessageInputRef.current?.focus(), 1000);
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
+
     this.intervalId = setInterval(() => {
       this.forceUpdate();
     }, 60 * 60 * 1000); // every 1 hour re-apply the time window filter.
   }
+
+  // Handle change from hidden to visible:
+  handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') setTimeout(() => this.newMessageInputRef.current?.focus(), 1000);
+  };
 
   componentWillUnmount() {
     if (this.intervalId) clearInterval(this.intervalId);
@@ -112,9 +121,10 @@ class Messages extends Component<MessagesProps, MsgState> {
               onChange={(e) => this.setState({ newMessage: e.target.value })}
               placeholder='Type a message...'
               className='new-message-text'
+              ref={this.newMessageInputRef}
             />
             <button onClick={this.handleSendMessage} className='send-button'>
-              <Send />
+              <SendHorizontal />
             </button>
           </div>
 
