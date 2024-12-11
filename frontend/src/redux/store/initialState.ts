@@ -1,4 +1,4 @@
-import { AppState } from './actions/types';
+import { AppState } from './types';
 import { DEFAULT_TIME_WINDOW_DAYS } from './constants';
 
 const initialState: AppState = {

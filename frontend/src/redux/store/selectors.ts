@@ -1,6 +1,6 @@
 import { createSelector } from 'reselect';
-import { AppState } from '../actions/types';
-import { DEFAULT_TIME_WINDOW_DAYS } from '../constants';
+import { AppState } from './types';
+import { DEFAULT_TIME_WINDOW_DAYS } from './constants';
 
 // Selector to get the timeWindowDays from state
 export const selectTimeWindow = (state: AppState) => state.mnu.timeWindowDays;

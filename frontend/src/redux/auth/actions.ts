@@ -2,11 +2,9 @@ import { AuthContextProps } from 'react-oidc-context';
 import { Dispatch } from 'redux';
 import appConfigData from '../../appConfig.json';
 
-// Action Types
 export const AUTH_LOGIN_SUCCESS = 'AUTH_LOGIN_SUCCESS';
 export const AUTH_LOGOUT = 'AUTH_LOGOUT';
 
-// Action Interfaces
 interface AuthLoginSuccessAction {
   type: typeof AUTH_LOGIN_SUCCESS;
   payload: { JWT: string; username: string };
@@ -26,7 +24,9 @@ const authLogout = (): AuthLogoutAction => ({
 
 export type AuthActionTypes = AuthLoginSuccessAction | AuthLogoutAction;
 
+//==================
 // Action Creators
+//==================
 export const loginWithGoogle = (auth: AuthContextProps) => async (dispatch: Dispatch) => {
   try {
     await auth.signinRedirect();

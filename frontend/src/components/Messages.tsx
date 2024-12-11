@@ -1,13 +1,14 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { Send } from 'lucide-react';
-import { IMessage } from '../redux/actions/types';
-import { markMessageViewed, setTimeWindow, sendMessage } from '../redux/actions/actions';
 import { RootState } from '../redux/store/store';
-import { selectEffectiveTimeWindow } from '../redux/selectors/selectors';
-import '../App.css';
+import { IMessage } from '../redux/store/types';
+import { selectEffectiveTimeWindow } from '../redux/store/selectors';
+import { setTimeWindow } from '../redux/mnu/actions';
+import { markMessageViewed, sendMessage } from '../redux/msg/actions';
 import ReactMarkdown from 'react-markdown';
+import { Send } from 'lucide-react';
 import { ToastContainer } from 'react-toastify';
+import '../App.css';
 
 interface MessagesProps {
   wsConnected: boolean;
@@ -19,7 +20,7 @@ interface MessagesProps {
   setTimeWindow: (minutes: number | null) => void;
 }
 
-interface MessagesState {
+interface MsgState {
   error: string | null;
   loading: boolean;
   newMessage: string;
@@ -33,7 +34,7 @@ const options: Intl.DateTimeFormatOptions = {
   hour12: false,
 };
 
-class Messages extends Component<MessagesProps, MessagesState> {
+class Messages extends Component<MessagesProps, MsgState> {
   private intervalId: NodeJS.Timeout | null = null;
 
   constructor(props: MessagesProps) {

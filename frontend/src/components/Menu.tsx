@@ -1,8 +1,8 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import { toggleOverview, IToggleOverview, toggleMenu, toggleTimeFilter } from '../redux/actions/actions';
-import { loginWithGoogle, checkAuthStatus, logoutUser } from '../redux/actions/authActions';
-import { AppState } from '../redux/actions/types';
+import { toggleOverview, IToggleOverview, toggleMenu, toggleTimeFilter } from '../redux/mnu/actions';
+import { loginWithGoogle, checkAuthStatus, logoutUser } from '../redux/auth/actions';
+import { AppState } from '../redux/store/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { UserCircle, LogIn, Timer, BookOpenText } from 'lucide-react';
 import { AuthContextProps, useAuth } from 'react-oidc-context';

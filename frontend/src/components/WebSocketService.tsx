@@ -1,10 +1,11 @@
 import { connect, ConnectedProps } from 'react-redux';
 import { Component } from 'react';
 import { RootState } from '../redux/store/store';
-import { setWSConnected, setConnections, toggleConnections, loadPreviousMessages, addMessage } from '../redux/actions/actions';
-import { Network } from 'lucide-react';
+import { IConnection, INewMessage } from 'redux/store/types';
+import { setWSConnected, setConnections, toggleConnections } from '../redux/websockets/actions';
+import { loadPreviousMessages, addMessage } from '../redux/msg/actions';
 import appConfigData from '../appConfig.json';
-import { IConnection, INewMessage } from 'redux/actions/types';
+import { Network } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -71,7 +72,7 @@ class WebSocketService extends Component<Props> {
     if (!this.props.wsConnected || this.props.JWT !== prevProps.JWT) this.connect();
     else if (!this.props.wsConnected && prevProps.wsConnected) this.closeConnection();
 
-    // If this is a new message, send it to websocket:
+    // If this is a new message, send it on the websocket connection:
     if (this.props.lastSentMessage && this.props.lastSentMessage !== prevProps.lastSentMessage) {
       const message = this.props.lastSentMessage;
       this.props.addMessage({ content: message, sender: null });

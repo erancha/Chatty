@@ -1,8 +1,8 @@
 import React from 'react';
 import { Provider, connect } from 'react-redux';
 import store from './redux/store/store';
-import { AppState } from './redux/actions/types';
-import { checkAuthStatus } from './redux/actions/authActions';
+import { AppState } from './redux/store/types';
+import { checkAuthStatus } from './redux/auth/actions';
 import { AuthContextProps, useAuth } from 'react-oidc-context';
 import Messages from './components/Messages';
 import WebSocketService from './components/WebSocketService';

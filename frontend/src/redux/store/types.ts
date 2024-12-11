@@ -1,14 +1,14 @@
 export interface AppState {
-  mnu: MenuState;
+  mnu: MnuState;
   auth: AuthState;
   websockets: WebsocketsState;
-  msg: MessagesState;
+  msg: MsgState;
 }
 
 //===============
 // Menu
 //===============
-export interface MenuState {
+export interface MnuState {
   showOverview: boolean;
   menuOpen: boolean;
   timeFilterVisible: boolean;
@@ -43,7 +43,7 @@ export interface IConnection {
 //===============
 // Messages
 //===============
-export interface MessagesState {
+export interface MsgState {
   chatId: string;
   messages: IMessage[];
   lastSentMessage: string;
