@@ -20,8 +20,8 @@ exports.handler = async (event) => {
     const targetConnectionIds = await redisClient.smembers(`${STACK_NAME}:connections(${CHAT_ID})`);
     const sqsClient = new SQSClient({ region: AWS_REGION });
 
-    // Send all current connections to all connections every 5 minutes (ScheduleExpression: cron(* * * * ? *)):
-    if (targetConnectionIds.length > 0 && new Date().getMinutes() % 5 === 0) {
+    // Send all current connections and usernames to all connected users every few minutes (ScheduleExpression: cron(0/5 * * * ? *)):
+    if (targetConnectionIds.length > 0) {
       // console.log({ targetConnectionIds });
       await sqsClient.send(
         new SendMessageCommand({

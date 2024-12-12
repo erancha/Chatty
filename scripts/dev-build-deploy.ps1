@@ -58,7 +58,8 @@ try {
                 "ExistingElasticacheRedisClusterAddress='en-elasticache-redis-cluster.hz2zez.0001.euc1.cache.amazonaws.com:6379'",
                 "ExistingVpcId='vpc-08016eb77e7ac9962'",
                 "ExistingPrivateSubnetId='subnet-00a1db5158e0a7992'",
-                "ExistingMessagesTableStreamArn='arn:aws:dynamodb:eu-central-1:575491442067:table/cht-messages/stream/2024-12-03T15:56:33.705'"
+                "ExistingMessagesTableStreamArn='arn:aws:dynamodb:eu-central-1:575491442067:table/cht-messages/stream/2024-12-03T15:56:33.705'",
+                "ExistingMessagesTableName='cht-messages'"
 
                 $formattedElapsedTime = Get-ElapsedTimeFormatted -startTime $startTime
                 Write-Host "`n$(Get-Date -Format 'HH:mm:ss'), elapsed $formattedElapsedTime : Remember to add/remove !!!!!!!!!!!SG as an inbound rule to !!!!!MyElasticacheRedisSG !" -BackgroundColor DarkMagenta
@@ -70,7 +71,7 @@ try {
             }
             else {
                 # In feature branch, reuse the following resources from the main branch:
-                $parameterOverrides += "ExistingMessagesTableName='cht-messages'"
+                # $parameterOverrides += "ExistingMessagesTableName='cht-messages'"
             }
 
             # Join the parameter overrides into a single string

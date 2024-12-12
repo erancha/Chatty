@@ -311,12 +311,12 @@ Resources:
           - !Ref WebSocketLambdaSG
       Role: !GetAtt WebSocketLambdaRole.Arn
 
-  # Sends a random message to all connected clients every 1 hour.
-  SendRandomMessageFunction:
+  # Send all current connections and usernames to all connected users every few minutes.
+  RefreshConnectionsAndUsernamesFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../backend/websocket/messages/
-      Handler: sendRandomMessage.handler
+      Handler: refreshConnectionsAndUsernames.handler
       Runtime: nodejs20.x
       Layers:
         - !Ref ConnectionsUsernamesLayer
@@ -337,21 +337,21 @@ Resources:
           - !Ref WebSocketLambdaSG
       Role: !GetAtt WebSocketLambdaRole.Arn
 
-  SendRandomMessageScheduleRule:
+  RefreshConnectionsAndUsernamesScheduleRule:
     Type: AWS::Events::Rule
     Properties:
-      ScheduleExpression: cron(0/5 * * * ? *) # Every 5 minutes
+      ScheduleExpression: cron(0/5 * * * ? *) # === Every 5 minutes (TODO: Reconsider the need - now the frontend anyway check on mount).
       Targets:
-        - Arn: !GetAtt SendRandomMessageFunction.Arn
-          Id: 'SendRandomMessageFunction'
+        - Arn: !GetAtt RefreshConnectionsAndUsernamesFunction.Arn
+          Id: 'RefreshConnectionsAndUsernamesFunction'
 
-  SendRandomMessageFunctionPermission:
+  RefreshConnectionsAndUsernamesFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Ref SendRandomMessageFunction
+      FunctionName: !Ref RefreshConnectionsAndUsernamesFunction
       Principal: events.amazonaws.com
-      SourceArn: !GetAtt SendRandomMessageScheduleRule.Arn
+      SourceArn: !GetAtt RefreshConnectionsAndUsernamesScheduleRule.Arn
 
   # Security group and IAM Role for WebSocket Lambda functions:
   # -----------------------------------------------------------

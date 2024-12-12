@@ -331,8 +331,9 @@
 /* Alternate sides for sent and received messages */
 .message-bubble.local {
   align-self: flex-start;
-  background-color: #dcf8c6;
-  margin-right: auto;
+  background-color: #dcf8c6; /* same as .message-bubble .delete-button */
+  margin: 2px;
+  padding: 5px;
 }
 
 .message-bubble.others {
@@ -372,8 +373,12 @@
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  align-items: center;
 }
+
 .message-bubble .delete-button {
+  background-color: #dcf8c6; /* same as .message-bubble.local */
+  border: unset;
   cursor: pointer;
   scale: 50%;
 }

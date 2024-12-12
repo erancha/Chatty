@@ -176,6 +176,7 @@ class WebSocketService extends Component<Props> {
           // notify(`${messageData.content}, from: ${messageData}`);
         } else if (messageData.delete) {
           this.props.deleteMessage(messageData.delete, false);
+          toast(`Message ${messageData.delete} was deleted`, { autoClose: 2000 });
         } else {
           console.error(JSON.stringify(messageData));
         }

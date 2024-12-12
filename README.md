@@ -3,7 +3,7 @@
 ## 1. Overview
 
 Chatty is a serverless chat application built with AWS, React, and WebSockets.  
-The application is available online at https://d2gp7j2s0byyu1.cloudfront.net.
+The application is available online at https://d26ro76mo50jvo.cloudfront.net
 
 ## 2. Architecture Components
 
@@ -49,7 +49,7 @@ The application is available online at https://d2gp7j2s0byyu1.cloudfront.net.
 - Uses AWS SAM (Serverless Application Model) for deployment
 - Infrastructure is defined with CloudFormation templates
 - Deploy with a single command: `sam build` and `sam deploy`
-- The application is available online at https://d2gp7j2s0byyu1.cloudfront.net.
+- The application is available online at https://d26ro76mo50jvo.cloudfront.net
 
 ## 5. Scalability & Performance
 
