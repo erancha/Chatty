@@ -44,12 +44,14 @@ export interface IConnection {
 export interface MsgState {
   chatId: string;
   messages: IMessage[];
-  lastSentMessage: string;
+  lastSentMessageContent: string;
+  lastDeletedMessageId: string;
   timeFilterVisible: boolean;
   timeWindowDays: number | null;
 }
 
 export interface INewMessage {
+  id: string;
   content: string;
   sender: string | null;
 }
@@ -57,5 +59,4 @@ export interface INewMessage {
 export interface IMessage extends INewMessage {
   timestamp: number;
   viewed: boolean;
-  id: string;
 }

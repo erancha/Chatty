@@ -2,11 +2,12 @@ import { connect, ConnectedProps } from 'react-redux';
 import { Component } from 'react';
 import { AppState, IConnection, INewMessage } from 'redux/store/types';
 import { setWSConnected, setConnections, toggleConnections } from '../redux/websockets/actions';
-import { loadPreviousMessages, addMessage } from '../redux/msg/actions';
+import { loadPreviousMessages, addMessage, deleteMessage } from '../redux/msg/actions';
 import appConfigData from '../appConfig.json';
 import { Network } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { v4 as uuidv4 } from 'uuid';
 
 type Props = ConnectedProps<typeof connector>;
 class WebSocketService extends Component<Props> {
@@ -38,7 +39,7 @@ class WebSocketService extends Component<Props> {
           // Ping the websocket server:
           this.webSocket?.send(
             JSON.stringify({
-              action: 'SendMessage',
+              action: 'GenericWebsocketReceiver',
               data: { ping: true },
             })
           );
@@ -72,18 +73,33 @@ class WebSocketService extends Component<Props> {
     else if (!this.props.wsConnected && prevProps.wsConnected) this.closeConnection();
 
     // If this is a new message, send it on the websocket connection:
-    if (this.props.lastSentMessage && this.props.lastSentMessage !== prevProps.lastSentMessage) {
-      const message = this.props.lastSentMessage;
-      this.props.addMessage({ content: message, sender: null });
+    if (this.props.lastSentMessageContent && this.props.lastSentMessageContent !== prevProps.lastSentMessageContent) {
+      const messageId = uuidv4();
+      const messageContent = this.props.lastSentMessageContent;
+      this.props.addMessage({ id: messageId, content: messageContent, sender: null });
       try {
         this.webSocket?.send(
           JSON.stringify({
-            action: 'SendMessage',
-            data: { message },
+            action: 'GenericWebsocketReceiver',
+            data: { messageId, messageContent },
           })
         );
       } catch (error) {
         toast.error(`Failed to send a message to the websocket server: ${error}`);
+      }
+    }
+
+    // Send message id to be deleted on the WebSocket connection:
+    if (this.props.lastDeletedMessageId && this.props.lastDeletedMessageId !== prevProps.lastDeletedMessageId) {
+      try {
+        this.webSocket?.send(
+          JSON.stringify({
+            action: 'GenericWebsocketReceiver',
+            data: { delete: this.props.lastDeletedMessageId },
+          })
+        );
+      } catch (error) {
+        toast.error(`Failed to send delete message to the websocket server: ${error}`);
       }
     }
   }
@@ -152,12 +168,16 @@ class WebSocketService extends Component<Props> {
           this.props.setConnections(messageData.connections);
         } else if (messageData.ping) {
           this.props.setConnections(null);
-        } else {
+        } else if (messageData.content) {
           const newMessage: INewMessage = messageData;
           this.props.addMessage(newMessage);
           if (newMessage.sender !== '$connect' && !newMessage.sender?.includes('AWS::Events::Rule'))
             toast(`${newMessage.content} , from ${newMessage.sender}`, { autoClose: Math.max(Math.min(newMessage.content.length * 75, 4000), 2000) });
           // notify(`${messageData.content}, from: ${messageData}`);
+        } else if (messageData.delete) {
+          this.props.deleteMessage(messageData.delete, false);
+        } else {
+          console.error(JSON.stringify(messageData));
         }
       };
 
@@ -219,7 +239,8 @@ const mapStateToProps = (state: AppState) => ({
   lastConnectionsTimestamp: state.websockets.lastConnectionsTimestamp,
   lastConnectionsTimestampISO: state.websockets.lastConnectionsTimestampISO,
   chatId: state.msg.chatId,
-  lastSentMessage: state.msg.lastSentMessage,
+  lastSentMessageContent: state.msg.lastSentMessageContent,
+  lastDeletedMessageId: state.msg.lastDeletedMessageId,
 });
 
 const mapDispatchToProps = {
@@ -228,6 +249,7 @@ const mapDispatchToProps = {
   toggleConnections,
   loadPreviousMessages,
   addMessage,
+  deleteMessage,
 };
 
 const connector = connect(mapStateToProps, mapDispatchToProps);

@@ -48,7 +48,7 @@ exports.handler = async (event) => {
           MessageBody: JSON.stringify({
             targetConnectionIds,
             chatId: CHAT_ID,
-            message: { content: record.content, sender: `${STACK_NAME} : AWS::Events::Rule cron` },
+            message: { id: record.id, content: record.content, sender: `${STACK_NAME} : AWS::Events::Rule cron` },
           }),
         })
       );

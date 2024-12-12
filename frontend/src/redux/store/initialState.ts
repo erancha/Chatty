@@ -21,7 +21,8 @@ const initialState: AppState = {
   msg: {
     chatId: 'global', //TODO: Implement private and group chats.
     messages: [],
-    lastSentMessage: '',
+    lastSentMessageContent: '',
+    lastDeletedMessageId: '',
     timeFilterVisible: false,
     timeWindowDays: DEFAULT_TIME_WINDOW_DAYS,
   },

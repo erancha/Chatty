@@ -47,6 +47,19 @@ export const markMessageViewed = (messageId: string): IMarkMessageViewed => ({
   payload: messageId,
 });
 
+// delete a message.
+export const DELETE_MESSAGE = 'DELETE_MESSAGE';
+export interface IDeleteMessage {
+  type: typeof DELETE_MESSAGE;
+  messageId: string;
+  informConnectedUsers: boolean; // if true, the deleting user will sent websocket notifications to other connected users.
+}
+export const deleteMessage = (messageId: string, informConnectedUsers: boolean): IDeleteMessage => ({
+  type: DELETE_MESSAGE,
+  messageId,
+  informConnectedUsers,
+});
+
 // show or hide the time filter:
 export const TOGGLE_TIME_FILTER = 'TOGGLE_TIME_FILTER';
 export interface IToggleTimeFilter {

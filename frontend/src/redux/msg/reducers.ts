@@ -7,15 +7,17 @@ import {
   MARK_MESSAGE_VIEWED,
   TOGGLE_TIME_FILTER,
   SET_TIME_WINDOW,
+  DELETE_MESSAGE,
   ILoadPreviousMessages,
   IAddMessage,
   ISendMessage,
   IMarkMessageViewed,
   IToggleTimeFilter,
   ISetTimeWindow,
+  IDeleteMessage,
 } from './actions';
 
-type HandledActions = ILoadPreviousMessages | IAddMessage | ISendMessage | IMarkMessageViewed | IToggleTimeFilter | ISetTimeWindow;
+type HandledActions = ILoadPreviousMessages | IAddMessage | ISendMessage | IMarkMessageViewed | IToggleTimeFilter | ISetTimeWindow | IDeleteMessage;
 
 export const msgReducers = (state: MsgState = initialState.msg, action: HandledActions): MsgState => {
   switch (action.type) {
@@ -27,14 +29,14 @@ export const msgReducers = (state: MsgState = initialState.msg, action: HandledA
     case SEND_MESSAGE:
       return {
         ...state,
-        lastSentMessage: action.payload,
+        lastSentMessageContent: action.payload,
       };
     case ADD_MESSAGE:
       return {
         ...state,
         messages: [
           {
-            id: performance.now().toString(),
+            id: action.payload.id,
             content: action.payload.content,
             sender: action.payload.sender,
             timestamp: Date.now(),
@@ -48,12 +50,16 @@ export const msgReducers = (state: MsgState = initialState.msg, action: HandledA
         ...state,
         messages: state.messages.map((message) => (message.id === action.payload ? { ...message, viewed: true } : message)),
       };
-
+    case DELETE_MESSAGE:
+      return {
+        ...state,
+        lastDeletedMessageId: action.informConnectedUsers ? action.messageId : state.lastDeletedMessageId,
+        messages: state.messages.filter((message) => message.id !== action.messageId), // Filter out the deleted message
+      };
     case TOGGLE_TIME_FILTER:
       return { ...state, timeFilterVisible: action.payload };
     case SET_TIME_WINDOW:
       return { ...state, timeWindowDays: action.payload };
-
     default:
       return state;
   }

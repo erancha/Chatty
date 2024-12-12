@@ -74,19 +74,29 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
       EXPIRATION_TIME
     );
 
-    // Load and send the previous chat messages to the client:
+    // Send all connected usernames (including the current new one) to all connected users:
     const connections = await collectConnectionsAndUsernames(redisClient, STACK_NAME, connectionIds);
-    const previousMessages = await loadPreviousChatMessages(currentChatId, currentUserName);
-    const messageBody = JSON.stringify({
+    let messageBody = JSON.stringify({
       targetConnectionIds: connectionIds,
-      message: {
-        connections,
-        previousMessages,
-      },
+      message: { connections },
       skipSavingToDB: true,
     });
-    // console.log(messageBody);
     const sqsClient = new SQSClient({ region: AWS_REGION });
+    await sqsClient.send(
+      new SendMessageCommand({
+        QueueUrl: SQS_QUEUE_URL,
+        MessageGroupId: 'Default', // Required for FIFO queues
+        MessageBody: messageBody,
+      })
+    );
+
+    // Load and send the previous chat messages to the current client:
+    const previousMessages = await loadPreviousChatMessages(currentChatId, currentUserName);
+    messageBody = JSON.stringify({
+      targetConnectionIds: [currentConnectionId],
+      message: { previousMessages },
+      skipSavingToDB: true,
+    });
     await sqsClient.send(
       new SendMessageCommand({
         QueueUrl: SQS_QUEUE_URL,
@@ -116,6 +126,8 @@ async function loadPreviousChatMessages(currentChatId, currentUserName) {
   if (previousChatMessages.length > 0) {
     previousChatMessages = previousChatMessages.map((message) => JSON.parse(message));
   } else {
+    console.log('Cache miss. Loading from the database ..');
+
     // Load the previous chat messages from DynamoDB:
     const result = await dynamodbDocClient.send(
       new QueryCommand({
@@ -128,15 +140,13 @@ async function loadPreviousChatMessages(currentChatId, currentUserName) {
         Limit: 100, //TODO: Handle pagination.
       })
     );
-    previousChatMessages = await result.Items.map((item) => {
-      return {
-        id: item.id,
-        timestamp: new Date(item.updatedAt).getTime(),
-        content: item.content,
-        sender: item.sender,
-        viewed: true,
-      };
-    });
+    previousChatMessages = result.Items.map((item) => ({
+      id: item.id,
+      timestamp: new Date(item.updatedAt).getTime(),
+      content: item.content,
+      sender: item.sender,
+      viewed: true,
+    }));
 
     // Insert the previous chat messages into Redis:
     const previousMessagesStringifiedItems = previousChatMessages.map((message) => JSON.stringify(message));

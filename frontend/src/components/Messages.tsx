@@ -2,9 +2,9 @@ import React, { Component, createRef } from 'react';
 import { connect } from 'react-redux';
 import { AppState, IMessage } from '../redux/store/types';
 import { selectEffectiveTimeWindow } from '../redux/store/selectors';
-import { markMessageViewed, sendMessage, setTimeWindow } from '../redux/msg/actions';
+import { markMessageViewed, sendMessage, setTimeWindow, deleteMessage, IDeleteMessage } from '../redux/msg/actions';
 import ReactMarkdown from 'react-markdown';
-import { SendHorizontal } from 'lucide-react';
+import { SendHorizontal, Trash2 } from 'lucide-react';
 import { ToastContainer } from 'react-toastify';
 import '../App.css';
 
@@ -15,6 +15,7 @@ interface MessagesProps {
   timeWindowDays: number | null;
   sendMessage: (message: string) => void;
   markMessageViewed: (messageId: string) => void;
+  deleteMessage: (message: string, informConnectedUsers: boolean) => IDeleteMessage;
   setTimeWindow: (minutes: number | null) => void;
 }
 
@@ -73,6 +74,12 @@ class Messages extends Component<MessagesProps, MsgState> {
   handleMessageClick = (messageId: string) => {
     if (messageId) {
       this.props.markMessageViewed(messageId);
+    }
+  };
+
+  handleDeleteMessage = (messageId: string) => {
+    if (messageId) {
+      this.props.deleteMessage(messageId, true);
     }
   };
 
@@ -138,7 +145,14 @@ class Messages extends Component<MessagesProps, MsgState> {
                 <div className='message-content'>
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
-                <div className='message-timestamp'>{new Date(msg.timestamp).toLocaleString('en-GB', options)}</div>
+                <div className='message-footer'>
+                  {!msg.sender /* i.e. the message was sent by the authenticated user; refer to the comment in backend\websocket\connect\connect.js: Nullify the sender attribute for records with the same sender as the current username (as done for new messages by the current user) */ && (
+                    <button onClick={() => this.handleDeleteMessage(msg.id)} className='delete-button'>
+                      <Trash2 />
+                    </button>
+                  )}
+                  <div className='message-timestamp'>{new Date(msg.timestamp).toLocaleString('en-GB', options)}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -189,6 +203,7 @@ const mapDispatchToProps = {
   sendMessage,
   markMessageViewed,
   setTimeWindow,
+  deleteMessage,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Messages);

@@ -1,7 +1,6 @@
 const { ApiGatewayManagementApiClient, PostToConnectionCommand } = require('@aws-sdk/client-apigatewaymanagementapi');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
-const crypto = require('crypto');
+const { DynamoDBDocumentClient, PutCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 
 const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const WEBSOCKET_API_URL = process.env.WEBSOCKET_API_URL.replace(/^wss/, 'https');
@@ -24,7 +23,7 @@ exports.handler = async (event) => {
     await Promise.all(
       recordsExtractedFromQueue.map(async (record) => {
         const extractedRecord = JSON.parse(record.body);
-        // console.log(`Extracted record: ${JSON.stringify(extractedRecord)}`);
+        console.log(`Extracted record: ${JSON.stringify(extractedRecord)}`);
 
         // Send the message to all connected clients excluding the sender:
         for (const connectionId of extractedRecord.targetConnectionIds) {
@@ -46,21 +45,28 @@ exports.handler = async (event) => {
         // Write each message to a dynamo db table:
         if (!extractedRecord.skipSavingToDB) {
           //TODO: This functionality is planned to be isolated to another lambda function, which will subscribe to a new SNS topic (refer to the readme.md file).
-          await docClient.send(
-            new PutCommand({
-              TableName: MESSAGES_TABLE_NAME,
-              Item: {
-                id: crypto.randomUUID(),
-                chatId: extractedRecord.chatId,
-                updatedAt: new Date().toISOString(),
-                ...extractedRecord.message,
-              },
-            })
-          );
+          if (extractedRecord.message.delete) {
+            await docClient.send(
+              new DeleteCommand({
+                TableName: MESSAGES_TABLE_NAME,
+                Key: { id: extractedRecord.message.delete },
+              })
+            );
+          } else
+            await docClient.send(
+              new PutCommand({
+                TableName: MESSAGES_TABLE_NAME,
+                Item: {
+                  chatId: extractedRecord.chatId,
+                  updatedAt: new Date().toISOString(),
+                  ...extractedRecord.message,
+                },
+              })
+            );
         }
       })
     );
   } catch (error) {
-    console.error(`Error receiving messages: ${error}, event: ${JSON.stringify(event, null, 2)}`);
+    console.error(`Error: ${error}, event: ${JSON.stringify(event, null, 2)}`);
   }
 };

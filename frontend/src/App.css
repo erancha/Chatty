@@ -280,7 +280,8 @@
   cursor: pointer;
 }
 
-.send-button:hover {
+.send-button:hover,
+.message-bubble .delete-button:hover {
   background-color: #128c7e;
 }
 
@@ -365,6 +366,16 @@
 
 .message-bubble.viewed {
   opacity: 0.7;
+}
+
+.message-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+.message-bubble .delete-button {
+  cursor: pointer;
+  scale: 50%;
 }
 
 /* Responsive Design */

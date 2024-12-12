@@ -289,11 +289,11 @@ Resources:
           - !Ref WebSocketLambdaSG
       Role: !GetAtt WebSocketLambdaRole.Arn
 
-  ReceiveMessageOnWebsocketFunction: # custom function to handle messages sent from a client
+  GenericWebsocketReceiverFunction: # custom function to handle messages sent from a client
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../backend/websocket/messages/
-      Handler: receiveMessageOnWebsocket.handler
+      Handler: genericWebsocketReceiver.handler
       Runtime: nodejs20.x
       Layers:
         - !Ref IoredisLayer
@@ -464,13 +464,13 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DisconnectFunction.Arn}/invocations
 
-  ReceiveMessageOnWebsocketIntegration:
+  GenericWebsocketReceiverIntegration:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
       ApiId: !Ref WebSocketApi
-      Description: ReceiveMessageOnWebsocket Function Integration
+      Description: GenericWebsocketReceiver Function Integration
       IntegrationType: AWS_PROXY
-      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ReceiveMessageOnWebsocketFunction.Arn}/invocations
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GenericWebsocketReceiverFunction.Arn}/invocations
 
   ConnectRoute:
     Type: AWS::ApiGatewayV2::Route
@@ -494,16 +494,16 @@ Resources:
         - - 'integrations'
           - !Ref DisconnectIntegration
 
-  ReceiveMessageOnWebsocketRoute:
+  GenericWebsocketReceiverRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref WebSocketApi
-      RouteKey: SendMessage
-      OperationName: SendMessageRoute
+      RouteKey: GenericWebsocketReceiver
+      OperationName: GenericWebsocketReceiverRoute
       Target: !Join
         - '/'
         - - 'integrations'
-          - !Ref ReceiveMessageOnWebsocketIntegration
+          - !Ref GenericWebsocketReceiverIntegration
 
   WebSocketDeployment:
     Type: AWS::ApiGatewayV2::Deployment
@@ -553,13 +553,13 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*/$disconnect'
 
-  ReceiveMessageOnWebsocketPermission:
+  GenericWebsocketReceiverPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Ref ReceiveMessageOnWebsocketFunction
+      FunctionName: !Ref GenericWebsocketReceiverFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*/SendMessage'
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*/GenericWebsocketReceiver'
 
   # ------------------------------------------------------------------------------
   # SQS
@@ -629,6 +629,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - dynamodb:PutItem
+                  - dynamodb:DeleteItem
                 Resource:
                   - !If
                     - CreateMessagesTable
