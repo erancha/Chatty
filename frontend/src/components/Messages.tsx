@@ -1,10 +1,8 @@
 import React, { Component, createRef } from 'react';
 import { connect } from 'react-redux';
-import { RootState } from '../redux/store/store';
-import { IMessage } from '../redux/store/types';
+import { AppState, IMessage } from '../redux/store/types';
 import { selectEffectiveTimeWindow } from '../redux/store/selectors';
-import { setTimeWindow } from '../redux/mnu/actions';
-import { markMessageViewed, sendMessage } from '../redux/msg/actions';
+import { markMessageViewed, sendMessage, setTimeWindow } from '../redux/msg/actions';
 import ReactMarkdown from 'react-markdown';
 import { SendHorizontal } from 'lucide-react';
 import { ToastContainer } from 'react-toastify';
@@ -180,10 +178,10 @@ const selectColor = (sender: string | null) => {
   return colors[colorIndex];
 };
 
-const mapStateToProps = (state: RootState) => ({
+const mapStateToProps = (state: AppState) => ({
   wsConnected: state.websockets.isConnected,
   messages: state.msg.messages,
-  timeFilterVisible: state.mnu.timeFilterVisible,
+  timeFilterVisible: state.msg.timeFilterVisible,
   timeWindowDays: selectEffectiveTimeWindow(state),
 });
 

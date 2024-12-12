@@ -11,8 +11,6 @@ export interface AppState {
 export interface MnuState {
   showOverview: boolean;
   menuOpen: boolean;
-  timeFilterVisible: boolean;
-  timeWindowDays: number | null;
 }
 
 //===============
@@ -47,6 +45,8 @@ export interface MsgState {
   chatId: string;
   messages: IMessage[];
   lastSentMessage: string;
+  timeFilterVisible: boolean;
+  timeWindowDays: number | null;
 }
 
 export interface INewMessage {

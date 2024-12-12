@@ -1,8 +1,10 @@
 import { AuthState } from '../store/types';
 import initialState from '../store/initialState';
-import { AUTH_LOGIN_SUCCESS, AUTH_LOGOUT, AuthActionTypes } from './actions';
+import { AUTH_LOGIN_SUCCESS, AUTH_LOGOUT, IAuthLoginSuccess, IAuthLogout } from './actions';
 
-export const authReducers = (state: AuthState = initialState.auth, action: AuthActionTypes): AuthState => {
+type HandledActions = IAuthLoginSuccess | IAuthLogout;
+
+export const authReducers = (state: AuthState = initialState.auth, action: HandledActions): AuthState => {
   switch (action.type) {
     case AUTH_LOGIN_SUCCESS:
       return {

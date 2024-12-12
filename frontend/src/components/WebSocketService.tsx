@@ -1,7 +1,6 @@
 import { connect, ConnectedProps } from 'react-redux';
 import { Component } from 'react';
-import { RootState } from '../redux/store/store';
-import { IConnection, INewMessage } from 'redux/store/types';
+import { AppState, IConnection, INewMessage } from 'redux/store/types';
 import { setWSConnected, setConnections, toggleConnections } from '../redux/websockets/actions';
 import { loadPreviousMessages, addMessage } from '../redux/msg/actions';
 import appConfigData from '../appConfig.json';
@@ -211,7 +210,7 @@ class WebSocketService extends Component<Props> {
   }
 }
 
-const mapStateToProps = (state: RootState) => ({
+const mapStateToProps = (state: AppState) => ({
   isAuthenticated: state.auth.isAuthenticated,
   JWT: state.auth.JWT,
   wsConnected: state.websockets.isConnected,

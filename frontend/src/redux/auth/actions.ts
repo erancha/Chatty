@@ -1,28 +1,25 @@
-import { AuthContextProps } from 'react-oidc-context';
 import { Dispatch } from 'redux';
+import { AuthContextProps } from 'react-oidc-context';
 import appConfigData from '../../appConfig.json';
 
 export const AUTH_LOGIN_SUCCESS = 'AUTH_LOGIN_SUCCESS';
 export const AUTH_LOGOUT = 'AUTH_LOGOUT';
 
-interface AuthLoginSuccessAction {
+export interface IAuthLoginSuccess {
   type: typeof AUTH_LOGIN_SUCCESS;
   payload: { JWT: string; username: string };
 }
-
-interface AuthLogoutAction {
-  type: typeof AUTH_LOGOUT;
-}
-
-const authLoginSuccess = (JWT: string, username: string): AuthLoginSuccessAction => ({
+const authLoginSuccess = (JWT: string, username: string): IAuthLoginSuccess => ({
   type: AUTH_LOGIN_SUCCESS,
   payload: { JWT, username },
 });
-const authLogout = (): AuthLogoutAction => ({
+
+export interface IAuthLogout {
+  type: typeof AUTH_LOGOUT;
+}
+const authLogout = (): IAuthLogout => ({
   type: AUTH_LOGOUT,
 });
-
-export type AuthActionTypes = AuthLoginSuccessAction | AuthLogoutAction;
 
 //==================
 // Action Creators

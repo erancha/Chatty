@@ -5,15 +5,19 @@ import {
   ADD_MESSAGE,
   SEND_MESSAGE,
   MARK_MESSAGE_VIEWED,
+  TOGGLE_TIME_FILTER,
+  SET_TIME_WINDOW,
   ILoadPreviousMessages,
   IAddMessage,
   ISendMessage,
   IMarkMessageViewed,
+  IToggleTimeFilter,
+  ISetTimeWindow,
 } from './actions';
 
-type AppAction = ILoadPreviousMessages | IAddMessage | ISendMessage | IMarkMessageViewed;
+type HandledActions = ILoadPreviousMessages | IAddMessage | ISendMessage | IMarkMessageViewed | IToggleTimeFilter | ISetTimeWindow;
 
-export const msgReducers = (state: MsgState = initialState.msg, action: AppAction): MsgState => {
+export const msgReducers = (state: MsgState = initialState.msg, action: HandledActions): MsgState => {
   switch (action.type) {
     case LOAD_PREVIOUS_MESSAGES:
       return {
@@ -44,6 +48,11 @@ export const msgReducers = (state: MsgState = initialState.msg, action: AppActio
         ...state,
         messages: state.messages.map((message) => (message.id === action.payload ? { ...message, viewed: true } : message)),
       };
+
+    case TOGGLE_TIME_FILTER:
+      return { ...state, timeFilterVisible: action.payload };
+    case SET_TIME_WINDOW:
+      return { ...state, timeWindowDays: action.payload };
 
     default:
       return state;

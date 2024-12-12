@@ -1,7 +1,8 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import { toggleOverview, IToggleOverview, toggleMenu, toggleTimeFilter } from '../redux/mnu/actions';
+import { toggleOverview, IToggleOverview, toggleMenu, IToggleMenu } from '../redux/mnu/actions';
 import { loginWithGoogle, checkAuthStatus, logoutUser } from '../redux/auth/actions';
+import { toggleTimeFilter, IToggleTimeFilter } from '../redux/msg/actions';
 import { AppState } from '../redux/store/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { UserCircle, LogIn, Timer, BookOpenText } from 'lucide-react';
@@ -11,9 +12,9 @@ interface MenuProps {
   showOverview: boolean;
   toggleOverview: (show: boolean) => IToggleOverview;
   menuOpen: boolean;
-  toggleMenu: (isOpen: boolean) => void;
+  toggleMenu: (isOpen: boolean) => IToggleMenu;
   timeFilterVisible: boolean;
-  toggleTimeFilter: (isVisible: boolean) => void;
+  toggleTimeFilter: (isVisible: boolean) => IToggleTimeFilter;
   isAuthenticated: boolean;
   loginWithGoogle: (auth: AuthContextProps) => void;
   checkAuthStatus: (auth: AuthContextProps) => void;
@@ -100,9 +101,9 @@ class ReduxConnectedMenu extends React.Component<MenuProps & { auth: AuthContext
 const mapStateToProps = (state: AppState) => ({
   showOverview: state.mnu.showOverview,
   menuOpen: state.mnu.menuOpen,
-  timeFilterVisible: state.mnu.timeFilterVisible,
   isAuthenticated: state.auth.isAuthenticated,
   authenticatedUsername: state.auth.username,
+  timeFilterVisible: state.msg.timeFilterVisible,
 });
 
 const mapDispatchToProps = {

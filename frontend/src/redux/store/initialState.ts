@@ -2,6 +2,10 @@ import { AppState } from './types';
 import { DEFAULT_TIME_WINDOW_DAYS } from './constants';
 
 const initialState: AppState = {
+  mnu: {
+    showOverview: false,
+    menuOpen: false,
+  },
   auth: {
     isAuthenticated: false,
     JWT: null,
@@ -18,10 +22,6 @@ const initialState: AppState = {
     chatId: 'global', //TODO: Implement private and group chats.
     messages: [],
     lastSentMessage: '',
-  },
-  mnu: {
-    showOverview: false,
-    menuOpen: false,
     timeFilterVisible: false,
     timeWindowDays: DEFAULT_TIME_WINDOW_DAYS,
   },
