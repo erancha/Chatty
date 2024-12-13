@@ -38,8 +38,8 @@ exports.handler = async (event) => {
     }
 
     // Randomize a message every 1 hour:
-    if (new Date().getMinutes() === 0) {
-      const record = await getRecordAroundRandomTimestamp('2024-11-29T15:25:10.631Z', '2024-11-29T15:25:15.076Z');
+    /*if (new Date().getMinutes() === 0)TODO!!*/ {
+      const record = await getRecordAroundRandomTimestamp('2024-11-29T15:25:12.088Z', '2024-11-29T15:25:15.076Z');
       // console.log(JSON.stringify(record.content));
       await sqsClient.send(
         new SendMessageCommand({
@@ -69,8 +69,8 @@ const dynamodbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 async function getRecordAroundRandomTimestamp(startTimestamp, endTimestamp) {
   const start = new Date(startTimestamp).getTime();
   const end = new Date(endTimestamp).getTime();
-  const randomTime = Math.floor(Math.random() * (end - start + 1)) + start;
-  const randomTimestamp = new Date(randomTime).toISOString(); // Return in ISO format
+  const randomTime = start + Math.floor(Math.random() * (end - start + 1));
+  const randomTimestamp = new Date(randomTime).toISOString();
 
   try {
     const result = await dynamodbDocClient.send(
@@ -89,8 +89,15 @@ async function getRecordAroundRandomTimestamp(startTimestamp, endTimestamp) {
     );
 
     const items = result.Items || [];
-    return items.length > 0 ? items[0] : null;
+
+    // Throw an error if no records were found
+    if (items.length === 0) {
+      throw new Error(`No records found for the specified time range: ${startTimestamp} to ${randomTimestamp}`);
+    }
+
+    return items[0];
   } catch (error) {
     console.error('Error getting record from DynamoDB:', error);
+    throw error; // Re-throw the error to propagate it upwards
   }
 }

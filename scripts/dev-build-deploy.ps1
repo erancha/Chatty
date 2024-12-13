@@ -96,7 +96,7 @@ try {
                 else {
                     Write-Host "`n$(Get-Date -Format 'HH:mm:ss'), elapsed $formattedElapsedTime : Deployment completed successfully." -ForegroundColor Green
                     ./common/update-app-config-dev.ps1
-                    # ./delete-lambda-layers.ps1
+                    # ./common/utils/delete-lambda-layers.ps1
                 }
             }
         }
