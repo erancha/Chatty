@@ -11,7 +11,7 @@ $websocket_api_url  = .\get-api-url.ps1 -stackOutputs $stack_outputs -gatewayTyp
 
 $build_time = ""
 if ($backend_build_time) {
-  $build_time = (Get-Date -Format "yyyy MM/dd_HH:mm") + " "
+  $build_time = $commonConstants.stackName + " " + (Get-Date -Format "yyyy MM/dd_HH:mm") + " "
 }
 
 $commonConstants = ./constants.ps1

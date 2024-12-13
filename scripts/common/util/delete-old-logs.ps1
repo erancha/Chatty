@@ -1,7 +1,7 @@
 $commonConstants = . ../constants.ps1
 
 # Set the threshold time to 5 minutes ago
-$thresholdTime = (Get-Date).AddMinutes(-15).ToUniversalTime()
+$thresholdTime = (Get-Date).AddMinutes(-5).ToUniversalTime()
 
 # Get all CloudWatch log groups
 Write-Host "Fetching log groups from region: $($commonConstants.region)"
@@ -13,8 +13,6 @@ if ($logGroupsJson) {
 
     if ($logGroups.logGroups.Count -gt 0) {
         foreach ($logGroup in $logGroups.logGroups) {
-            Write-Host "Processing log group: $($logGroup.logGroupName)"
-
             # Get all log streams in the log group
             $logStreamsJson = aws logs describe-log-streams --log-group-name $logGroup.logGroupName --region $commonConstants.region
             $logStreams = $logStreamsJson | ConvertFrom-Json
@@ -29,8 +27,6 @@ if ($logGroupsJson) {
                         # Delete the log stream
                         Write-Output "Deleting log stream: $($logStream.logStreamName) from log group: $($logGroup.logGroupName)"
                         aws logs delete-log-stream --log-group-name $logGroup.logGroupName --log-stream-name $logStream.logStreamName --region $commonConstants.region
-                    } else {
-                        Write-Output "Log stream $($logStream.logStreamName) in log group $($logGroup.logGroupName) is not older than 5 minutes."
                     }
                 }
 
@@ -42,8 +38,6 @@ if ($logGroupsJson) {
                     # Delete the log group if no log streams remain
                     Write-Output "Deleting log group: $($logGroup.logGroupName) as it has no remaining log streams."
                     aws logs delete-log-group --log-group-name $logGroup.logGroupName --region $commonConstants.region
-                } else {
-                    Write-Output "Log group $($logGroup.logGroupName) still has log streams remaining."
                 }
             } else {
                 Write-Host "No log streams found in log group $($logGroup.logGroupName). Deleting the log group."

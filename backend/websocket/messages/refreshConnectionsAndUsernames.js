@@ -1,4 +1,5 @@
 const Redis = require('ioredis');
+const { v4: uuidv4 } = require('uuid');
 const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
@@ -39,8 +40,7 @@ exports.handler = async (event) => {
 
     // Randomize a message every 1 hour:
     /*if (new Date().getMinutes() === 0)TODO!!*/ {
-      const record = await getRecordAroundRandomTimestamp('2024-11-29T15:25:12.088Z', '2024-11-29T15:25:15.076Z');
-      // console.log(JSON.stringify(record.content));
+      // const content = await getRecordAroundRandomTimestamp();
       await sqsClient.send(
         new SendMessageCommand({
           QueueUrl: SQS_QUEUE_URL,
@@ -48,7 +48,11 @@ exports.handler = async (event) => {
           MessageBody: JSON.stringify({
             targetConnectionIds,
             chatId: CHAT_ID,
-            message: { id: record.id, content: record.content, sender: `${STACK_NAME} : AWS::Events::Rule cron` },
+            message: {
+              id: uuidv4(),
+              content: /*content*/ `Test: ${new Date().toISOString()}`,
+              sender: `${STACK_NAME} : AWS::Events::Rule cron`,
+            },
           }),
         })
       );
@@ -66,7 +70,9 @@ const dynamodbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 //================================================================
 // Function to get a record around a randomly generated timestamp
 //================================================================
-async function getRecordAroundRandomTimestamp(startTimestamp, endTimestamp) {
+async function getRecordAroundRandomTimestamp() {
+  const startTimestamp = '2024-11-29T15:25:13.638Z';
+  const endTimestamp = '2024-11-29T15:41:09.598Z';
   const start = new Date(startTimestamp).getTime();
   const end = new Date(endTimestamp).getTime();
   const randomTime = start + Math.floor(Math.random() * (end - start + 1));
@@ -95,9 +101,9 @@ async function getRecordAroundRandomTimestamp(startTimestamp, endTimestamp) {
       throw new Error(`No records found for the specified time range: ${startTimestamp} to ${randomTimestamp}`);
     }
 
-    return items[0];
+    return items[0].content;
   } catch (error) {
     console.error('Error getting record from DynamoDB:', error);
-    throw error; // Re-throw the error to propagate it upwards
+    throw error;
   }
 }
