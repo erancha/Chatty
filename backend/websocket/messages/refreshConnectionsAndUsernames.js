@@ -39,8 +39,9 @@ exports.handler = async (event) => {
     }
 
     // Randomize a message every 1 hour:
-    if (new Date().getMinutes() === 0) {
-      // const content = await getRecordAroundRandomTimestamp();
+    const currentTime = new Date();
+    if (currentTime.getMinutes() === 0) {
+      const content = currentTime.getHours() % 10 === 0 ? await getRecordAroundRandomTimestamp() : `Test: ${new Date().toISOString()}`;
       await sqsClient.send(
         new SendMessageCommand({
           QueueUrl: SQS_QUEUE_URL,
@@ -50,7 +51,7 @@ exports.handler = async (event) => {
             chatId: CHAT_ID,
             message: {
               id: uuidv4(),
-              content: /*content*/ `Test: ${new Date().toISOString()}`,
+              content,
               sender: `${STACK_NAME} : AWS::Events::Rule cron`,
             },
           }),
@@ -71,8 +72,8 @@ const dynamodbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 // Function to get a record around a randomly generated timestamp
 //================================================================
 async function getRecordAroundRandomTimestamp() {
-  const startTimestamp = '2024-11-29T15:25:13.638Z';
-  const endTimestamp = '2024-11-29T15:41:09.598Z';
+  const startTimestamp = '2024-12-14T06:27:43.017Z';
+  const endTimestamp = '2024-12-14T06:27:46.937Z';
   const start = new Date(startTimestamp).getTime();
   const end = new Date(endTimestamp).getTime();
   const randomTime = start + Math.floor(Math.random() * (end - start + 1));
