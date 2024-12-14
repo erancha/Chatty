@@ -159,6 +159,7 @@ class WebSocketService extends Component<Props> {
       };
 
       this.webSocket.onmessage = (event) => {
+        console.log(event.data.substring(0,60));
         const messageData = JSON.parse(event.data);
         if (messageData.previousMessages) {
           // Added functionality on $connect to load and send to the client previous chat messages and active connections.

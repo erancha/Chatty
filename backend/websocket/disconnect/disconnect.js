@@ -37,7 +37,7 @@ end
         `;
     const updatedConnectionIds = await redisClient.eval(luaScript, 2, currentConnectionId, STACK_NAME);
     if (updatedConnectionIds) {
-      const messageBody = JSON.stringify({
+      const sqsMessageBody = JSON.stringify({
         targetConnectionIds: updatedConnectionIds,
         message: { connections: await collectConnectionsAndUsernames(redisClient, STACK_NAME, updatedConnectionIds) },
         skipSavingToDB: true,
@@ -47,7 +47,7 @@ end
         new SendMessageCommand({
           QueueUrl: SQS_QUEUE_URL,
           MessageGroupId: 'Default', // Required for FIFO queues
-          MessageBody: messageBody,
+          MessageBody: sqsMessageBody,
         })
       );
     } else console.warn(`No users found for connection ID: '${currentConnectionId}' , STACK_NAME: ${STACK_NAME}`);

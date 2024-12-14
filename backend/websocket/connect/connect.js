@@ -76,7 +76,7 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
 
     // Send all connected usernames (including the current new one) to all connected users:
     const connections = await collectConnectionsAndUsernames(redisClient, STACK_NAME, connectionIds);
-    let messageBody = JSON.stringify({
+    let sqsMessageBody = JSON.stringify({
       targetConnectionIds: connectionIds,
       message: { connections },
       skipSavingToDB: true,
@@ -86,13 +86,13 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
       new SendMessageCommand({
         QueueUrl: SQS_QUEUE_URL,
         MessageGroupId: 'Default', // Required for FIFO queues
-        MessageBody: messageBody,
+        MessageBody: sqsMessageBody,
       })
     );
 
     // Load and send the previous chat messages to the current client:
     const previousMessages = await loadPreviousChatMessages(currentChatId, currentUserName);
-    messageBody = JSON.stringify({
+    sqsMessageBody = JSON.stringify({
       targetConnectionIds: [currentConnectionId],
       message: { previousMessages },
       skipSavingToDB: true,
@@ -101,7 +101,7 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
       new SendMessageCommand({
         QueueUrl: SQS_QUEUE_URL,
         MessageGroupId: 'Default', // Required for FIFO queues
-        MessageBody: messageBody,
+        MessageBody: sqsMessageBody,
       })
     );
 

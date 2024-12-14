@@ -39,7 +39,7 @@ exports.handler = async (event) => {
     }
 
     // Randomize a message every 1 hour:
-    /*if (new Date().getMinutes() === 0)TODO!!*/ {
+    if (new Date().getMinutes() === 0) {
       // const content = await getRecordAroundRandomTimestamp();
       await sqsClient.send(
         new SendMessageCommand({
