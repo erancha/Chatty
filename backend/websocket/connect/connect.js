@@ -47,12 +47,12 @@ local currentChatId = KEYS[4]
 local STACK_NAME = ARGV[1]
 local EXPIRATION_TIME = tonumber(ARGV[2])
 
--- Store the user ID, user name, and chat ID for the connection ID with expiration
+-- Store the user ID, user name, and chat ID for the connection ID, with expiration
 redis.call('set', STACK_NAME .. ':userId(' .. currentConnectionId .. ')', currentUserId, 'EX', EXPIRATION_TIME)
 redis.call('set', STACK_NAME .. ':userName(' .. currentConnectionId .. ')', currentUserName, 'EX', EXPIRATION_TIME)
 redis.call('set', STACK_NAME .. ':chatId(' .. currentConnectionId .. ')', currentChatId, 'EX', EXPIRATION_TIME)
 
--- Add the connection ID to the chat's connections set and set expiration
+-- Add the connection ID to the chat's connections set, with expiration
 redis.call('sadd', STACK_NAME .. ':connections(' .. currentChatId .. ')', currentConnectionId)
 redis.call('expire', STACK_NAME .. ':connections(' .. currentChatId .. ')', EXPIRATION_TIME)
 
@@ -79,7 +79,6 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
     let sqsMessageBody = JSON.stringify({
       targetConnectionIds: connectionIds,
       message: { connections },
-      skipSavingToDB: true,
     });
     const sqsClient = new SQSClient({ region: AWS_REGION });
     await sqsClient.send(
@@ -95,7 +94,6 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
     sqsMessageBody = JSON.stringify({
       targetConnectionIds: [currentConnectionId],
       message: { previousMessages },
-      skipSavingToDB: true,
     });
     await sqsClient.send(
       new SendMessageCommand({

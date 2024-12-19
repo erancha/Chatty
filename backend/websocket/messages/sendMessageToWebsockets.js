@@ -1,16 +1,11 @@
 const { ApiGatewayManagementApiClient, PostToConnectionCommand } = require('@aws-sdk/client-apigatewaymanagementapi');
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, PutCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 
-const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const WEBSOCKET_API_URL = process.env.WEBSOCKET_API_URL.replace(/^wss/, 'https');
-const MESSAGES_TABLE_NAME = process.env.MESSAGES_TABLE_NAME;
 
 //======================================================================================================
 // Handler:
 //   1. Extracts messages from an SQS queue.
 //   2. Sends the extracted messages to WebSocket clients, on connection ids extracted from the message.
-//   3. Writes the messages to a dynamo db table. //TODO: This functionality is planned to be isolated to another lambda function, which will subscribe to a new SNS topic (refer to the readme.md file).
 //======================================================================================================
 exports.handler = async (event) => {
   try {
@@ -37,32 +32,10 @@ exports.handler = async (event) => {
                 })
               );
             } catch (error) {
+              //TODO: There're occasional GoneException, more often when sending connections+usernames from the $connect handler. I suspect that sometimes a new connection isn't yet fully registered when it's being used for the first time, since often the next message on the same connection IS successfully sent.
               console.warn(error.name, `connectionId: ${connectionId}.`);
             }
           }
-        }
-
-        // Write each message to a dynamo db table:
-        if (!extractedRecord.skipSavingToDB) {
-          //TODO: This functionality is planned to be isolated to another lambda function, which will subscribe to a new SNS topic (refer to the readme.md file).
-          if (extractedRecord.message.delete) {
-            await docClient.send(
-              new DeleteCommand({
-                TableName: MESSAGES_TABLE_NAME,
-                Key: { id: extractedRecord.message.delete },
-              })
-            );
-          } else
-            await docClient.send(
-              new PutCommand({
-                TableName: MESSAGES_TABLE_NAME,
-                Item: {
-                  chatId: extractedRecord.chatId,
-                  updatedAt: new Date().toISOString(),
-                  ...extractedRecord.message,
-                },
-              })
-            );
         }
       })
     );

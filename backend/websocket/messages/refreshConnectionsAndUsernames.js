@@ -32,7 +32,6 @@ exports.handler = async (event) => {
             targetConnectionIds,
             chatId: CHAT_ID,
             message: { connections: await collectConnectionsAndUsernames(redisClient, STACK_NAME, targetConnectionIds) },
-            skipSavingToDB: true,
           }),
         })
       );

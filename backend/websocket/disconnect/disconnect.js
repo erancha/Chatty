@@ -40,7 +40,6 @@ end
       const sqsMessageBody = JSON.stringify({
         targetConnectionIds: updatedConnectionIds,
         message: { connections: await collectConnectionsAndUsernames(redisClient, STACK_NAME, updatedConnectionIds) },
-        skipSavingToDB: true,
       });
       const sqsClient = new SQSClient({ region: AWS_REGION });
       await sqsClient.send(

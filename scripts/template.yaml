@@ -303,6 +303,7 @@ Resources:
           APP_AWS_REGION: !Ref AWS::Region
           STACK_NAME: !Ref AWS::StackName
           ELASTICACHE_REDIS_ADDRESS: !Ref ExistingElasticacheRedisClusterAddress
+          MESSAGES_TABLE_NAME: !If [CreateMessagesTable, !Ref MessagesTable, !Ref ExistingMessagesTableName]
           SQS_QUEUE_URL: !Ref MessagesToWebsocketsQueue
       VpcConfig:
         SubnetIds:
@@ -320,7 +321,6 @@ Resources:
       Runtime: nodejs20.x
       Layers:
         - !Ref ConnectionsUsernamesLayer
-        - !Ref jsonwebtokenLayer
         - !Ref IoredisLayer
         - !Ref AwsSdkV3Layer
       Environment:
@@ -421,6 +421,8 @@ Resources:
               - Effect: Allow
                 Action:
                   - dynamodb:Query
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
                 Resource:
                   - !If
                     - CreateMessagesTable
@@ -582,7 +584,6 @@ Resources:
       Environment:
         Variables:
           WEBSOCKET_API_URL: !Sub 'wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}'
-          MESSAGES_TABLE_NAME: !If [CreateMessagesTable, !Ref MessagesTable, !Ref ExistingMessagesTableName]
       Role: !GetAtt SendMessageToWebsocketsLambdaExecutionRole.Arn
       Events: # event source mapping
         SQSTrigger:
@@ -622,23 +623,6 @@ Resources:
               - Effect: Allow
                 Action: 'execute-api:ManageConnections'
                 Resource: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*'
-        - PolicyName: DynamoDBAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:PutItem
-                  - dynamodb:DeleteItem
-                Resource:
-                  - !If
-                    - CreateMessagesTable
-                    - !GetAtt MessagesTable.Arn
-                    - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ExistingMessagesTableName}'
-                  - !If
-                    - CreateMessagesTable
-                    - !Sub '${MessagesTable.Arn}/index/UserIdUpdatedIndex'
-                    - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ExistingMessagesTableName}/index/ChatIdUpdatedIndex'
 
   # ------------------------------------------------------------------------------
   # DynamoDB Tables.

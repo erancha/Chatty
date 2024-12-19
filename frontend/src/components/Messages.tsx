@@ -20,8 +20,6 @@ interface MessagesProps {
 }
 
 interface MsgState {
-  error: string | null;
-  loading: boolean;
   newMessage: string;
 }
 
@@ -41,8 +39,6 @@ class Messages extends Component<MessagesProps, MsgState> {
     super(props);
 
     this.state = {
-      error: null,
-      loading: false,
       newMessage: '',
     };
   }
@@ -100,11 +96,8 @@ class Messages extends Component<MessagesProps, MsgState> {
   };
 
   render() {
-    const { error, loading, newMessage } = this.state;
+    const { newMessage } = this.state;
     const { timeFilterVisible, timeWindowDays } = this.props;
-
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error}</div>;
 
     const filteredMessages = this.getFilteredMessages();
 
