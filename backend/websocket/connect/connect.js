@@ -75,10 +75,11 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
     );
 
     // Send all connected usernames (including the current new one) to all connected users:
-    const connections = await collectConnectionsAndUsernames(redisClient, STACK_NAME, connectionIds);
+    const connectionsAndUsernames = await collectConnectionsAndUsernames(redisClient, STACK_NAME, connectionIds);
     let sqsMessageBody = JSON.stringify({
       targetConnectionIds: connectionIds,
-      message: { connections },
+      senderConnectionId: currentConnectionId,
+      message: { connectionsAndUsernames },
     });
     const sqsClient = new SQSClient({ region: AWS_REGION });
     await sqsClient.send(
@@ -93,7 +94,7 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
     const previousMessages = await loadPreviousChatMessages(currentChatId, currentUserName);
     sqsMessageBody = JSON.stringify({
       targetConnectionIds: [currentConnectionId],
-      message: { previousMessages },
+      message: { previousMessages, connections: connectionsAndUsernames },
     });
     await sqsClient.send(
       new SendMessageCommand({

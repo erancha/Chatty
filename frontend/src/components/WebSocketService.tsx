@@ -164,6 +164,7 @@ class WebSocketService extends Component<Props> {
         if (messageData.previousMessages) {
           // Added functionality on $connect to load and send to the client previous chat messages and active connections.
           this.props.loadPreviousMessages(messageData.previousMessages);
+          this.props.setConnections(messageData.connections);
         } else if (messageData.connections) {
           this.props.setConnections(messageData.connections);
         } else if (messageData.ping) {
