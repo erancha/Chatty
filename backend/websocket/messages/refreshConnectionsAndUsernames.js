@@ -2,10 +2,11 @@ const Redis = require('ioredis');
 const { v4: uuidv4 } = require('uuid');
 const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, QueryCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
 const { collectConnectionsAndUsernames } = require('/opt/connections');
 
 const redisClient = new Redis(process.env.ELASTICACHE_REDIS_ADDRESS);
+const dynamodbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const AWS_REGION = process.env.APP_AWS_REGION;
 const STACK_NAME = process.env.STACK_NAME;
@@ -40,20 +41,16 @@ exports.handler = async (event) => {
     // Randomize a message every 1 hour:
     const currentTime = new Date();
     if (currentTime.getMinutes() === 0) {
-      const content = currentTime.getHours() % 10 === 0 ? await getRecordAroundRandomTimestamp() : `Test: ${new Date().toISOString()}`;
-      await sqsClient.send(
-        new SendMessageCommand({
-          QueueUrl: SQS_QUEUE_URL,
-          MessageGroupId: 'Default', // Required for FIFO queues
-          MessageBody: JSON.stringify({
-            targetConnectionIds,
+      await dynamodbDocClient.send(
+        new PutCommand({
+          TableName: MESSAGES_TABLE_NAME,
+          Item: {
+            id: uuidv4(),
             chatId: CHAT_ID,
-            message: {
-              id: uuidv4(),
-              content,
-              sender: `${STACK_NAME} : AWS::Events::Rule cron`,
-            },
-          }),
+            content: currentTime.getHours() % 10 === 0 ? await getRecordAroundRandomTimestamp() : `Test: ${new Date().toISOString()}`,
+            sender: `${STACK_NAME} : AWS::Events::Rule cron`,
+            updatedAt: new Date().toISOString(),
+          },
         })
       );
     }
@@ -64,8 +61,6 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'Internal Server Error' }) };
   }
 };
-
-const dynamodbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 //================================================================
 // Function to get a record around a randomly generated timestamp
