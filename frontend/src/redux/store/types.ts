@@ -27,13 +27,13 @@ export interface AuthState {
 //===============
 export interface WebsocketsState {
   isConnected: boolean;
-  connections: IConnection[];
+  connectionsAndUsernames: IConnectionAndUsername[];
   showConnections: boolean;
   lastConnectionsTimestamp: string; // for display: HH:MM
   lastConnectionsTimestampISO: string; // for comparisons: Full ISO value.
 }
 
-export interface IConnection {
+export interface IConnectionAndUsername {
   connectionId: string;
   username: string | null;
 }

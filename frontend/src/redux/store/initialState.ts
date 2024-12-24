@@ -13,7 +13,7 @@ const initialState: AppState = {
   },
   websockets: {
     isConnected: false,
-    connections: [],
+    connectionsAndUsernames: [],
     showConnections: true,
     lastConnectionsTimestamp: '',
     lastConnectionsTimestampISO: '',

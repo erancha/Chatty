@@ -18,7 +18,7 @@ exports.handler = async (event) => {
     await Promise.all(
       recordsExtractedFromQueue.map(async (record) => {
         const extractedRecord = JSON.parse(record.body);
-        console.log(`Extracted record: ${JSON.stringify(extractedRecord).substring(0, 100)}`);
+        console.log(`Extracted record: ${JSON.stringify(extractedRecord).substring(0, 500)}`);
 
         // Send the message to all connected clients excluding the sender:
         for (const connectionId of extractedRecord.targetConnectionIds) {

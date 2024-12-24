@@ -1,8 +1,15 @@
 import { WebsocketsState } from '../store/types';
 import initialState from '../store/initialState';
-import { SET_WS_CONNECTED, SET_CONNECTIONS, TOGGLE_CONNECTIONS, ISetWSConnected, ISetConnections, IToggleConnections } from './actions';
+import {
+  SET_WS_CONNECTED,
+  SET_CONNECTIONS_AND_USERNAMES,
+  TOGGLE_CONNECTIONS,
+  ISetWSConnected,
+  ISetConnectionsAndUsernames,
+  IToggleConnections,
+} from './actions';
 
-type HandledActions = ISetWSConnected | ISetConnections | IToggleConnections;
+type HandledActions = ISetWSConnected | ISetConnectionsAndUsernames | IToggleConnections;
 
 export const websocketsReducers = (state: WebsocketsState = initialState.websockets, action: HandledActions): WebsocketsState => {
   switch (action.type) {
@@ -15,11 +22,11 @@ export const websocketsReducers = (state: WebsocketsState = initialState.websock
         lastConnectionsTimestampISO: action.payload ? currentTimestamp.toISOString() : '',
       };
     }
-    case SET_CONNECTIONS: {
+    case SET_CONNECTIONS_AND_USERNAMES: {
       const currentTimestamp = new Date();
       return {
         ...state,
-        connections: action.payload ? action.payload : state.connections,
+        connectionsAndUsernames: action.payload ? action.payload : state.connectionsAndUsernames,
         lastConnectionsTimestamp: currentTimestamp.toLocaleString('en-GB', options),
         lastConnectionsTimestampISO: currentTimestamp.toISOString(),
       };

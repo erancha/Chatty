@@ -32,7 +32,7 @@ exports.handler = async (event) => {
           MessageBody: JSON.stringify({
             targetConnectionIds,
             chatId: CHAT_ID,
-            message: { connections: await collectConnectionsAndUsernames(redisClient, STACK_NAME, targetConnectionIds) },
+            message: { connectionsAndUsernames: await collectConnectionsAndUsernames(redisClient, STACK_NAME, targetConnectionIds) },
           }),
         })
       );
@@ -41,16 +41,27 @@ exports.handler = async (event) => {
     // Randomize a message every 1 hour:
     const currentTime = new Date();
     if (currentTime.getMinutes() === 0) {
+      const record = {
+        id: uuidv4(),
+        chatId: CHAT_ID,
+        content: currentTime.getHours() % 10 === 0 ? await getRecordAroundRandomTimestamp() : `Test: ${new Date().toISOString()}`,
+        sender: `${STACK_NAME} : AWS::Events::Rule cron`,
+      };
       await dynamodbDocClient.send(
         new PutCommand({
           TableName: MESSAGES_TABLE_NAME,
-          Item: {
-            id: uuidv4(),
+          Item: { ...record, updatedAt: new Date().toISOString() },
+        })
+      );
+      await sqsClient.send(
+        new SendMessageCommand({
+          QueueUrl: SQS_QUEUE_URL,
+          MessageGroupId: 'Default', // Required for FIFO queues
+          MessageBody: JSON.stringify({
+            targetConnectionIds,
             chatId: CHAT_ID,
-            content: currentTime.getHours() % 10 === 0 ? await getRecordAroundRandomTimestamp() : `Test: ${new Date().toISOString()}`,
-            sender: `${STACK_NAME} : AWS::Events::Rule cron`,
-            updatedAt: new Date().toISOString(),
-          },
+            message: record,
+          }),
         })
       );
     }

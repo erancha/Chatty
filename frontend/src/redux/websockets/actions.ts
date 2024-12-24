@@ -1,4 +1,4 @@
-import { IConnection } from '../store/types';
+import { IConnectionAndUsername } from '../store/types';
 
 // save the current websocket connection state.
 export const SET_WS_CONNECTED = 'SET_WS_CONNECTED';
@@ -12,14 +12,14 @@ export const setWSConnected = (connected: boolean): ISetWSConnected => ({
 });
 
 // save all connected users in the state:
-export const SET_CONNECTIONS = 'SET_CONNECTIONS';
-export interface ISetConnections {
-  type: typeof SET_CONNECTIONS;
-  payload: IConnection[] | null;
+export const SET_CONNECTIONS_AND_USERNAMES = 'SET_CONNECTIONS_AND_USERNAMES';
+export interface ISetConnectionsAndUsernames {
+  type: typeof SET_CONNECTIONS_AND_USERNAMES;
+  payload: IConnectionAndUsername[] | null;
 }
-export const setConnections = (connections: IConnection[] | null): ISetConnections => ({
-  type: SET_CONNECTIONS,
-  payload: connections,
+export const setConnectionsAndUsernames = (connectionsAndUsernames: IConnectionAndUsername[] | null): ISetConnectionsAndUsernames => ({
+  type: SET_CONNECTIONS_AND_USERNAMES,
+  payload: connectionsAndUsernames,
 });
 
 // show or hide the connected users:

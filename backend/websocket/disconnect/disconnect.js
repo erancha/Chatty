@@ -37,16 +37,18 @@ end
         `;
     const updatedConnectionIds = await redisClient.eval(luaScript, 2, currentConnectionId, STACK_NAME);
     if (updatedConnectionIds) {
-      const sqsMessageBody = JSON.stringify({
-        targetConnectionIds: updatedConnectionIds,
-        message: { connections: await collectConnectionsAndUsernames(redisClient, STACK_NAME, updatedConnectionIds) },
-      });
       const sqsClient = new SQSClient({ region: AWS_REGION });
       await sqsClient.send(
         new SendMessageCommand({
           QueueUrl: SQS_QUEUE_URL,
           MessageGroupId: 'Default', // Required for FIFO queues
-          MessageBody: sqsMessageBody,
+          MessageBody: JSON.stringify({
+            targetConnectionIds: updatedConnectionIds,
+            message: {
+              connectionsAndUsernames: await collectConnectionsAndUsernames(updatedConnectionIds, redisClient, STACK_NAME),
+              timeStamp: new Date().toISOString() /* to prevent de-duplication in SQS */,
+            },
+          }),
         })
       );
     } else console.warn(`No users found for connection ID: '${currentConnectionId}' , STACK_NAME: ${STACK_NAME}`);

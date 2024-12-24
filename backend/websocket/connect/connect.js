@@ -73,20 +73,19 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
       STACK_NAME,
       EXPIRATION_TIME
     );
-
-    // Send all connected usernames (including the current new one) to all connected users:
     const connectionsAndUsernames = await collectConnectionsAndUsernames(redisClient, STACK_NAME, connectionIds);
-    let sqsMessageBody = JSON.stringify({
-      targetConnectionIds: connectionIds,
-      senderConnectionId: currentConnectionId,
-      message: { connectionsAndUsernames },
-    });
+
+    // Send all connected usernames (including the current new one) to all connected users excluding the current which will be handled below:
     const sqsClient = new SQSClient({ region: AWS_REGION });
     await sqsClient.send(
       new SendMessageCommand({
         QueueUrl: SQS_QUEUE_URL,
         MessageGroupId: 'Default', // Required for FIFO queues
-        MessageBody: sqsMessageBody,
+        MessageBody: JSON.stringify({
+          targetConnectionIds: connectionIds,
+          senderConnectionId: currentConnectionId,
+          message: { connectionsAndUsernames, timeStamp: new Date().toISOString() /* to prevent de-duplication in SQS */ },
+        }),
       })
     );
 
@@ -94,7 +93,7 @@ return redis.call('smembers', STACK_NAME .. ':connections(' .. currentChatId .. 
     const previousMessages = await loadPreviousChatMessages(currentChatId, currentUserName);
     sqsMessageBody = JSON.stringify({
       targetConnectionIds: [currentConnectionId],
-      message: { previousMessages, connections: connectionsAndUsernames },
+      message: { previousMessages, connectionsAndUsernames },
     });
     await sqsClient.send(
       new SendMessageCommand({

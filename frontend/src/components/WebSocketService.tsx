@@ -1,7 +1,7 @@
 import { connect, ConnectedProps } from 'react-redux';
 import { Component } from 'react';
-import { AppState, IConnection, INewMessage } from 'redux/store/types';
-import { setWSConnected, setConnections, toggleConnections } from '../redux/websockets/actions';
+import { AppState, IConnectionAndUsername, INewMessage } from 'redux/store/types';
+import { setWSConnected, setConnectionsAndUsernames, toggleConnections } from '../redux/websockets/actions';
 import { loadPreviousMessages, addMessage, deleteMessage } from '../redux/msg/actions';
 import appConfigData from '../appConfig.json';
 import { Network } from 'lucide-react';
@@ -21,7 +21,7 @@ class WebSocketService extends Component<Props> {
     try {
       this.logFormatted(
         `wsConnected: ${this.props.wsConnected} , JWT: ${this.props.JWT?.substring(0, 10)} ` +
-          this.props.connections.map((conn: IConnection) => conn.username).join(', ')
+          this.props.connectionsAndUsernames.map((conn: IConnectionAndUsername) => conn.username).join(', ')
       );
 
       document.addEventListener('visibilitychange', this.handleVisibilityChange);
@@ -65,7 +65,8 @@ class WebSocketService extends Component<Props> {
       `wsConnected: ${this.props.wsConnected} , prev: ${prevProps.wsConnected}, jwt: ${this.props.JWT?.substring(
         0,
         10
-      )}, prev: ${prevProps.JWT?.substring(0, 10)} , connected users: ` + this.props.connections.map((conn: IConnection) => conn.username).join(', ')
+      )}, prev: ${prevProps.JWT?.substring(0, 10)} , connected users: ` +
+        this.props.connectionsAndUsernames.map((conn: IConnectionAndUsername) => conn.username).join(', ')
     );
     // this.props.addMessage({ content: `this.props.lastConnectionsTimestamp: ${this.props.lastConnectionsTimestamp}`, sender: 'componentDidUpdate', });
 
@@ -164,11 +165,11 @@ class WebSocketService extends Component<Props> {
         if (messageData.previousMessages) {
           // Added functionality on $connect to load and send to the client previous chat messages and active connections.
           this.props.loadPreviousMessages(messageData.previousMessages);
-          this.props.setConnections(messageData.connections);
-        } else if (messageData.connections) {
-          this.props.setConnections(messageData.connections);
+          this.props.setConnectionsAndUsernames(messageData.connectionsAndUsernames);
+        } else if (messageData.connectionsAndUsernames) {
+          this.props.setConnectionsAndUsernames(messageData.connectionsAndUsernames);
         } else if (messageData.ping) {
-          this.props.setConnections(null);
+          this.props.setConnectionsAndUsernames(null);
         } else if (messageData.content) {
           const newMessage: INewMessage = messageData;
           this.props.addMessage(newMessage);
@@ -218,9 +219,9 @@ class WebSocketService extends Component<Props> {
             <span className='last-connections-timestamp'>{this.props.lastConnectionsTimestamp}</span>
           </div>
           <ul className='right-column'>
-            {this.props.connections &&
+            {this.props.connectionsAndUsernames &&
               this.props.showConnections &&
-              this.props.connections.map((item: IConnection) => (
+              this.props.connectionsAndUsernames.map((item: IConnectionAndUsername) => (
                 <li key={item.connectionId} className='username'>
                   {item.username}
                 </li>
@@ -236,7 +237,7 @@ const mapStateToProps = (state: AppState) => ({
   isAuthenticated: state.auth.isAuthenticated,
   JWT: state.auth.JWT,
   wsConnected: state.websockets.isConnected,
-  connections: state.websockets.connections,
+  connectionsAndUsernames: state.websockets.connectionsAndUsernames,
   showConnections: state.websockets.showConnections,
   lastConnectionsTimestamp: state.websockets.lastConnectionsTimestamp,
   lastConnectionsTimestampISO: state.websockets.lastConnectionsTimestampISO,
@@ -247,7 +248,7 @@ const mapStateToProps = (state: AppState) => ({
 
 const mapDispatchToProps = {
   setWSConnected,
-  setConnections,
+  setConnectionsAndUsernames,
   toggleConnections,
   loadPreviousMessages,
   addMessage,
