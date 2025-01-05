@@ -2,14 +2,16 @@ import { WebsocketsState } from '../store/types';
 import initialState from '../store/initialState';
 import {
   SET_WS_CONNECTED,
-  SET_CONNECTIONS_AND_USERNAMES,
-  TOGGLE_CONNECTIONS,
   ISetWSConnected,
+  SET_APP_VISIBLE,
+  ISetAppVisible,
+  SET_CONNECTIONS_AND_USERNAMES,
   ISetConnectionsAndUsernames,
+  TOGGLE_CONNECTIONS,
   IToggleConnections,
 } from './actions';
 
-type HandledActions = ISetWSConnected | ISetConnectionsAndUsernames | IToggleConnections;
+type HandledActions = ISetWSConnected | ISetAppVisible | ISetConnectionsAndUsernames | IToggleConnections;
 
 export const websocketsReducers = (state: WebsocketsState = initialState.websockets, action: HandledActions): WebsocketsState => {
   switch (action.type) {
@@ -22,6 +24,14 @@ export const websocketsReducers = (state: WebsocketsState = initialState.websock
         lastConnectionsTimestampISO: action.payload ? currentTimestamp.toISOString() : '',
       };
     }
+
+    case SET_APP_VISIBLE: {
+      return {
+        ...state,
+        isAppVisible: action.payload,
+      };
+    }
+
     case SET_CONNECTIONS_AND_USERNAMES: {
       const currentTimestamp = new Date();
       return {
@@ -31,6 +41,7 @@ export const websocketsReducers = (state: WebsocketsState = initialState.websock
         lastConnectionsTimestampISO: currentTimestamp.toISOString(),
       };
     }
+
     case TOGGLE_CONNECTIONS:
       return {
         ...state,

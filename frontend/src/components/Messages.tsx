@@ -9,7 +9,7 @@ import { ToastContainer } from 'react-toastify';
 import '../App.css';
 
 interface MessagesProps {
-  wsConnected: boolean;
+  isWsConnected: boolean;
   messages: IMessage[];
   timeFilterVisible: boolean;
   timeWindowDays: number | null;
@@ -104,7 +104,7 @@ class Messages extends Component<MessagesProps, MsgState> {
     return (
       <div>
         <ToastContainer limit={1} />
-        <div className={`messages-container${!this.props.wsConnected ? ' disconnected' : ''}`}>
+        <div className={`messages-container${!this.props.isWsConnected ? ' disconnected' : ''}`}>
           {timeFilterVisible && (
             <div className='time-filter-container'>
               <div className='time-filter-title'>Time Filter:</div>
@@ -186,7 +186,7 @@ const selectColor = (sender: string | null) => {
 };
 
 const mapStateToProps = (state: AppState) => ({
-  wsConnected: state.websockets.isConnected,
+  isWsConnected: state.websockets.isConnected,
   messages: state.msg.messages,
   timeFilterVisible: state.msg.timeFilterVisible,
   timeWindowDays: selectEffectiveTimeWindow(state),

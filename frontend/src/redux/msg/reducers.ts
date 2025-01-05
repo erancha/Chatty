@@ -29,7 +29,7 @@ export const msgReducers = (state: MsgState = initialState.msg, action: HandledA
     case SEND_MESSAGE:
       return {
         ...state,
-        lastSentMessageContent: action.payload,
+        newMessageToBroadcast: action.payload,
       };
     case ADD_MESSAGE:
       return {
@@ -53,7 +53,7 @@ export const msgReducers = (state: MsgState = initialState.msg, action: HandledA
     case DELETE_MESSAGE:
       return {
         ...state,
-        lastDeletedMessageId: action.informConnectedUsers ? action.messageId : state.lastDeletedMessageId,
+        deletedMessageToBroadcast: action.informConnectedUsers ? action.messageId : state.deletedMessageToBroadcast,
         messages: state.messages.filter((message) => message.id !== action.messageId), // Filter out the deleted message
       };
     case TOGGLE_TIME_FILTER:

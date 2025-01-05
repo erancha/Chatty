@@ -13,6 +13,7 @@ const initialState: AppState = {
   },
   websockets: {
     isConnected: false,
+    isAppVisible: true,
     connectionsAndUsernames: [],
     showConnections: true,
     lastConnectionsTimestamp: '',
@@ -21,8 +22,8 @@ const initialState: AppState = {
   msg: {
     chatId: 'global', //TODO: Implement private and group chats.
     messages: [],
-    lastSentMessageContent: '',
-    lastDeletedMessageId: '',
+    newMessageToBroadcast: '',
+    deletedMessageToBroadcast: '',
     timeFilterVisible: false,
     timeWindowDays: DEFAULT_TIME_WINDOW_DAYS,
   },

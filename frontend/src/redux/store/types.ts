@@ -26,7 +26,8 @@ export interface AuthState {
 // WebSockets
 //===============
 export interface WebsocketsState {
-  isConnected: boolean;
+  isConnected: boolean; // true if the client application is connected to the websocket server
+  isAppVisible: boolean; // true if the client application is visible
   connectionsAndUsernames: IConnectionAndUsername[];
   showConnections: boolean;
   lastConnectionsTimestamp: string; // for display: HH:MM
@@ -44,8 +45,8 @@ export interface IConnectionAndUsername {
 export interface MsgState {
   chatId: string;
   messages: IMessage[];
-  lastSentMessageContent: string;
-  lastDeletedMessageId: string;
+  newMessageToBroadcast: string; // message content
+  deletedMessageToBroadcast: string; // message id
   timeFilterVisible: boolean;
   timeWindowDays: number | null;
 }

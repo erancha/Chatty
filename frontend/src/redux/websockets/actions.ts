@@ -6,9 +6,20 @@ export interface ISetWSConnected {
   type: typeof SET_WS_CONNECTED;
   payload: boolean;
 }
-export const setWSConnected = (connected: boolean): ISetWSConnected => ({
+export const setWSConnected = (isConnected: boolean): ISetWSConnected => ({
   type: SET_WS_CONNECTED,
-  payload: connected,
+  payload: isConnected,
+});
+
+// save the visiblility of the application (whether the page is displayed in the browser or not).
+export const SET_APP_VISIBLE = 'SET_APP_VISIBLE';
+export interface ISetAppVisible {
+  type: typeof SET_APP_VISIBLE;
+  payload: boolean;
+}
+export const setAppVisible = (isVisible: boolean): ISetAppVisible => ({
+  type: SET_APP_VISIBLE,
+  payload: isVisible,
 });
 
 // save all connected users in the state:

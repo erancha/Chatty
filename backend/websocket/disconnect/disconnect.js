@@ -45,7 +45,7 @@ end
           MessageBody: JSON.stringify({
             targetConnectionIds: updatedConnectionIds,
             message: {
-              connectionsAndUsernames: await collectConnectionsAndUsernames(updatedConnectionIds, redisClient, STACK_NAME),
+              connectionsAndUsernames: await collectConnectionsAndUsernames(redisClient, STACK_NAME, updatedConnectionIds),
               timeStamp: new Date().toISOString() /* to prevent de-duplication in SQS */,
             },
           }),
