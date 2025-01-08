@@ -313,45 +313,45 @@ Resources:
       Role: !GetAtt WebSocketLambdaRole.Arn
 
   # Send all current connections and usernames to all connected users every few minutes.
-  # RefreshConnectionsAndUsernamesFunction:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     CodeUri: ../backend/websocket/messages/
-  #     Handler: refreshConnectionsAndUsernames.handler
-  #     Runtime: nodejs20.x
-  #     Layers:
-  #       - !Ref ConnectionsUsernamesLayer
-  #       - !Ref IoredisLayer
-  #       - !Ref AwsSdkV3Layer
-  #     Environment:
-  #       Variables:
-  #         APP_AWS_REGION: !Ref AWS::Region
-  #         STACK_NAME: !Ref AWS::StackName
-  #         ELASTICACHE_REDIS_ADDRESS: !Ref ExistingElasticacheRedisClusterAddress
-  #         MESSAGES_TABLE_NAME: !If [CreateMessagesTable, !Ref MessagesTable, !Ref ExistingMessagesTableName]
-  #         SQS_QUEUE_URL: !Ref MessagesToWebsocketsQueue
-  #     VpcConfig:
-  #       SubnetIds:
-  #         - !Ref ExistingPrivateSubnetId
-  #       SecurityGroupIds:
-  #         - !Ref WebSocketLambdaSG
-  #     Role: !GetAtt WebSocketLambdaRole.Arn
+  RefreshConnectionsAndUsernamesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/websocket/messages/
+      Handler: refreshConnectionsAndUsernames.handler
+      Runtime: nodejs20.x
+      Layers:
+        - !Ref ConnectionsUsernamesLayer
+        - !Ref IoredisLayer
+        - !Ref AwsSdkV3Layer
+      Environment:
+        Variables:
+          APP_AWS_REGION: !Ref AWS::Region
+          STACK_NAME: !Ref AWS::StackName
+          ELASTICACHE_REDIS_ADDRESS: !Ref ExistingElasticacheRedisClusterAddress
+          MESSAGES_TABLE_NAME: !If [CreateMessagesTable, !Ref MessagesTable, !Ref ExistingMessagesTableName]
+          SQS_QUEUE_URL: !Ref MessagesToWebsocketsQueue
+      VpcConfig:
+        SubnetIds:
+          - !Ref ExistingPrivateSubnetId
+        SecurityGroupIds:
+          - !Ref WebSocketLambdaSG
+      Role: !GetAtt WebSocketLambdaRole.Arn
 
-  # RefreshConnectionsAndUsernamesScheduleRule:
-  #   Type: AWS::Events::Rule
-  #   Properties:
-  #     ScheduleExpression: cron(0/5 * * * ? *) # === Every 5 minutes (TODO: Reconsider the need - now the frontend anyway check on mount).
-  #     Targets:
-  #       - Arn: !GetAtt RefreshConnectionsAndUsernamesFunction.Arn
-  #         Id: 'RefreshConnectionsAndUsernamesFunction'
+  RefreshConnectionsAndUsernamesScheduleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: cron(0/5 * * * ? *) # === Every 5 minutes (TODO: Reconsider the need - now the frontend anyway check on mount).
+      Targets:
+        - Arn: !GetAtt RefreshConnectionsAndUsernamesFunction.Arn
+          Id: 'RefreshConnectionsAndUsernamesFunction'
 
-  # RefreshConnectionsAndUsernamesFunctionPermission:
-  #   Type: AWS::Lambda::Permission
-  #   Properties:
-  #     Action: lambda:InvokeFunction
-  #     FunctionName: !Ref RefreshConnectionsAndUsernamesFunction
-  #     Principal: events.amazonaws.com
-  #     SourceArn: !GetAtt RefreshConnectionsAndUsernamesScheduleRule.Arn
+  RefreshConnectionsAndUsernamesFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref RefreshConnectionsAndUsernamesFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt RefreshConnectionsAndUsernamesScheduleRule.Arn
 
   # Security group and IAM Role for WebSocket Lambda functions:
   # -----------------------------------------------------------

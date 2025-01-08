@@ -23,20 +23,20 @@ exports.handler = async (event) => {
     const sqsClient = new SQSClient({ region: AWS_REGION });
 
     // Send all current connections and usernames to all connected users every few minutes (ScheduleExpression: cron(0/5 * * * ? *)):
-    if (targetConnectionIds.length > 0) {
-      // console.log({ targetConnectionIds });
-      await sqsClient.send(
-        new SendMessageCommand({
-          QueueUrl: SQS_QUEUE_URL,
-          MessageGroupId: 'Default', // Required for FIFO queues
-          MessageBody: JSON.stringify({
-            targetConnectionIds,
-            chatId: CHAT_ID,
-            message: { connectionsAndUsernames: await collectConnectionsAndUsernames(redisClient, STACK_NAME, targetConnectionIds) },
-          }),
-        })
-      );
-    }
+    // if (targetConnectionIds.length > 0) {
+    //   // console.log({ targetConnectionIds });
+    //   await sqsClient.send(
+    //     new SendMessageCommand({
+    //       QueueUrl: SQS_QUEUE_URL,
+    //       MessageGroupId: 'Default', // Required for FIFO queues
+    //       MessageBody: JSON.stringify({
+    //         targetConnectionIds,
+    //         chatId: CHAT_ID,
+    //         message: { connectionsAndUsernames: await collectConnectionsAndUsernames(redisClient, STACK_NAME, targetConnectionIds) },
+    //       }),
+    //     })
+    //   );
+    // }
 
     // Randomize a message every 1 hour:
     const currentTime = new Date();
