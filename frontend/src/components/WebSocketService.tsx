@@ -151,9 +151,6 @@ class WebSocketService extends React.Component<WebSocketProps> {
         } else if (messageData.content) {
           const newMessage: INewMessage = messageData;
           this.props.addMessage(newMessage);
-          if (newMessage.sender !== '$connect' && !newMessage.sender?.includes('AWS::Events::Rule'))
-            toast(`${newMessage.content} , from ${newMessage.sender}`, { autoClose: Math.max(Math.min(newMessage.content.length * 75, 4000), 2000) });
-          // notify(`${messageData.content}, from: ${messageData}`);
         } else if (messageData.delete) {
           this.props.deleteMessage(messageData.delete, false);
           toast(`Message ${messageData.delete} was deleted`, { autoClose: 2000 });
