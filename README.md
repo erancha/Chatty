@@ -7,7 +7,7 @@ The application is available online at https://dc3jlg51gqshu.cloudfront.net/
 
 ## 2. Architecture Components
 
-![Architecture diagram](https://lucid.app/publicSegments/view/c66c78d7-f88b-42bf-96a6-c94a4cb526b8/image.jpeg)
+![Architecture diagram](https://lucid.app/publicSegments/view/ecb84db0-b442-41a5-8617-c8181fa541b4/image.jpeg)
 
 ### 2.1 Backend
 
