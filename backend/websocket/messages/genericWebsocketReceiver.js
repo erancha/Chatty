@@ -2,6 +2,7 @@ const Redis = require('ioredis');
 const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+const { v4: uuidv4 } = require('uuid');
 
 const redisClient = new Redis(process.env.ELASTICACHE_REDIS_ADDRESS);
 const dynamodbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
@@ -19,8 +20,28 @@ const MESSAGES_TABLE_NAME = process.env.MESSAGES_TABLE_NAME;
 exports.handler = async (event) => {
   let statusCode = 200;
   try {
-    const senderConnectionId = event.requestContext.connectionId;
-    const incomingData = JSON.parse(event.body).data;
+    const CHAT_ID = 'global';
+    let chatConnectionIds,
+      senderConnectionId,
+      chatId = CHAT_ID,
+      sender,
+      incomingData = {};
+
+    if (event.source === 'banking-service') {
+      sender = event.source;
+      // console.log(JSON.stringify(event, null, 2));
+
+      chatConnectionIds = await redisClient.smembers(`${STACK_NAME}:connections(${CHAT_ID})`);
+      const rawMessage = event.detail.dataCreated.transactions;
+      incomingData = {
+        messageId: uuidv4(),
+        messageContent: `**${rawMessage.amount}$** were **transferred from** account **${rawMessage.accounts.withdrawResult.account_id}** (user *${rawMessage.accounts.withdrawResult.user_id}*) **to** account **${rawMessage.accounts.depositResult.account_id}** (user *${rawMessage.accounts.depositResult.user_id}*)`,
+      };
+      // }
+    } else {
+      senderConnectionId = event.requestContext.connectionId;
+      incomingData = JSON.parse(event.body).data;
+    }
 
     let sqsMessageBody;
     if (incomingData.messageId) {
@@ -30,8 +51,9 @@ exports.handler = async (event) => {
       //====================
       if (!messageContent) throw `messageContent missing in ${event.body}`;
 
-      // Execute the Lua script to get the username, chat id and target connection ids:
-      const luaScript = `
+      if (!chatConnectionIds) {
+        // Execute the Lua script to get the username, chat id and target connection ids:
+        const luaScript = `
         local senderConnectionId = ARGV[1]
         local STACK_NAME = ARGV[2]
 
@@ -43,11 +65,11 @@ exports.handler = async (event) => {
         local chatConnectionIds = redis.call('SMEMBERS', STACK_NAME .. ':connections(' .. chatId .. ')')
         return {userName, chatId, chatConnectionIds}
         `;
-      const response = await redisClient.eval(luaScript, 0, senderConnectionId, STACK_NAME);
-      let sender, chatId, chatConnectionIds;
-      sender = response[0];
-      chatId = response[1];
-      chatConnectionIds = response[2];
+        const response = await redisClient.eval(luaScript, 0, senderConnectionId, STACK_NAME);
+        sender = response[0];
+        chatId = response[1];
+        chatConnectionIds = response[2];
+      }
 
       // database:
       const dbRecord = { id: messageId, content: messageContent, sender };
@@ -66,7 +88,6 @@ exports.handler = async (event) => {
       sqsMessageBody = JSON.stringify({
         targetConnectionIds: chatConnectionIds,
         senderConnectionId,
-        chatId,
         message: dbRecord,
       });
     } else if (incomingData.delete) {
@@ -115,7 +136,7 @@ exports.handler = async (event) => {
         targetConnectionIds: [senderConnectionId],
         message: { ping: new Date().toISOString() /* to prevent de-duplication in SQS */ },
       });
-    }
+    } else console.warn(`Received unexpected command: ${JSON.stringify(incomingData, null, 2)}`);
 
     let statusCode = 200;
     if (sqsMessageBody) {

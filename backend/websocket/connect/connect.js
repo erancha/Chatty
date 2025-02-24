@@ -30,13 +30,13 @@ exports.handler = async (event) => {
         )}`
       );
   } else throw new Error('JWT token is missing in the query string');
-  const decodedToken = jwt.decode(currentJwtToken);
-  if (!decodedToken || !decodedToken.sub) throw new Error('Invalid token: Missing user id (sub)');
+  const decodedJwt = jwt.decode(currentJwtToken);
+  if (!decodedJwt || !decodedJwt.sub) throw new Error('Invalid token: Missing user id (sub)');
 
   // Extract user id (sub) and user name from the token
   const currentConnectionId = event.requestContext.connectionId;
-  const currentUserId = decodedToken.sub;
-  const currentUserName = decodedToken.name;
+  const currentUserId = decodedJwt.sub;
+  const currentUserName = decodedJwt.name;
 
   // Refer to the comments inside the lua script:
   const luaScript = `
